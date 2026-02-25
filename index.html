@@ -225,6 +225,19 @@ scrollbar-width:none;
 .s-row:last-child{border-bottom:none}
 .tin{background:#1a1a24;border:1px solid #262636;border-radius:8px;padding:5px 10px;color:#e8e8f0;font-family:'DM Mono',monospace;font-size:12px;outline:none}
 
+/* ── SCHEDULE ── */
+.sched-block{position:absolute;left:64px;right:6px;border-radius:8px;padding:5px 8px;font-size:11px;font-weight:600;cursor:pointer;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.3);transition:opacity .15s}
+.sched-block:active{opacity:.8}
+.sched-hour{position:absolute;left:0;width:56px;text-align:right;font-family:'DM Mono',monospace;font-size:10px;color:#50506a;padding-right:8px;user-select:none}
+.sched-line{position:absolute;left:64px;right:0;height:1px;background:#1a1a24}
+.sched-now{position:absolute;left:0;right:0;height:2px;background:#f564a9;z-index:10}
+.sched-now::before{content:'';position:absolute;left:56px;top:-4px;width:10px;height:10px;border-radius:50%;background:#f564a9}
+.day-pick-btn{padding:6px 10px;background:#14141a;border:1px solid #262636;border-radius:8px;font-family:'DM Mono',monospace;font-size:11px;color:#50506a;cursor:pointer;transition:all .2s}
+.day-pick-btn.active{background:rgba(200,245,100,.1);border-color:#c8f564;color:#c8f564}
+.col-pick{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:border-color .2s;flex-shrink:0}
+.col-pick.active{border-color:#fff}
+.wk-col{flex:1;min-width:0;border-right:1px solid #1a1a24;position:relative}
+.wk-col:last-child{border-right:none}
 /* ── ADD ROW ── */
 .add-row{padding:0 14px 20px;display:flex;gap:10px}
 .add-inp{flex:1;background:#14141a;border:1px solid #262636;border-radius:12px;padding:11px 14px;color:#e8e8f0;font-size:14px;outline:none;transition:border-color .2s}
@@ -275,15 +288,16 @@ scrollbar-width:none;
 <div class="page" id="page-weekly"></div>
 <div class="page" id="page-journal"></div>
 <div class="page" id="page-progress"></div>
+<div class="page" id="page-schedule"></div>
 <div class="page" id="page-friends"></div>
 <div class="page" id="page-me"></div>
 
 <!-- NAV -->
 <nav id="nav">
   <button class="nav-btn active" data-page="today" onclick="go('today')"><span class="ico">✦</span><span>Today</span><span class="nav-dot"></span></button>
-  <button class="nav-btn" data-page="weekly" onclick="go('weekly')"><span class="ico">📅</span><span>Weekly</span><span class="nav-dot"></span></button>
+  <button class="nav-btn" data-page="schedule" onclick="go('schedule')"><span class="ico">🗓</span><span>Schedule</span><span class="nav-dot"></span></button>
+  <button class="nav-btn" data-page="weekly" onclick="go('weekly')"><span class="ico">📋</span><span>Weekly</span><span class="nav-dot"></span></button>
   <button class="nav-btn" data-page="journal" onclick="go('journal')"><span class="ico">📓</span><span>Mind</span><span class="nav-dot"></span></button>
-  <button class="nav-btn" data-page="progress" onclick="go('progress')"><span class="ico">📈</span><span>Progress</span><span class="nav-dot"></span></button>
   <button class="nav-btn" data-page="friends" onclick="go('friends')"><span class="ico">🏆</span><span>Friends</span><span class="nav-dot"></span></button>
   <button class="nav-btn" data-page="me" onclick="go('me')"><span class="ico">🌟</span><span>Me</span><span class="nav-dot"></span></button>
 </nav>
@@ -313,6 +327,60 @@ scrollbar-width:none;
   </div>
 </div>
 
+<div class="overlay" id="scheduleSheet" onclick="closeScheduleSheet(event)">
+  <div class="sheet" style="max-height:90vh;overflow-y:auto"><div class="sheet-handle"></div>
+    <div class="serif" id="schedSheetTitle" style="font-size:20px;font-style:italic;text-align:center;margin-bottom:16px">Add Event</div>
+    <label class="field-lbl">Title</label>
+    <input class="field-inp" id="evTitle" placeholder="e.g. Math Class, Gym, Study session">
+    <label class="field-lbl">Type</label>
+    <select class="field-inp" id="evType" onchange="updateEvTypeUI()" style="cursor:pointer">
+      <option value="class">📚 Class (repeating)</option>
+      <option value="event">📌 One-off event</option>
+      <option value="deadline">⚠️ Deadline</option>
+      <option value="habit">⏰ Habit time block</option>
+    </select>
+    <div id="evRepeatRow">
+      <label class="field-lbl">Repeat on days</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="evDayPicker">
+        <button class="day-pick-btn" data-day="0" onclick="toggleEvDay(0)">Sun</button>
+        <button class="day-pick-btn" data-day="1" onclick="toggleEvDay(1)">Mon</button>
+        <button class="day-pick-btn" data-day="2" onclick="toggleEvDay(2)">Tue</button>
+        <button class="day-pick-btn" data-day="3" onclick="toggleEvDay(3)">Wed</button>
+        <button class="day-pick-btn" data-day="4" onclick="toggleEvDay(4)">Thu</button>
+        <button class="day-pick-btn" data-day="5" onclick="toggleEvDay(5)">Fri</button>
+        <button class="day-pick-btn" data-day="6" onclick="toggleEvDay(6)">Sat</button>
+      </div>
+    </div>
+    <div id="evDateRow" style="display:none">
+      <label class="field-lbl">Date</label>
+      <input class="field-inp" id="evDate" type="date">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div><label class="field-lbl">Start time</label><input class="field-inp" id="evStart" type="time" value="09:00"></div>
+      <div><label class="field-lbl">End time</label><input class="field-inp" id="evEnd" type="time" value="10:00"></div>
+    </div>
+    <label class="field-lbl">Color</label>
+    <div style="display:flex;gap:8px;margin-bottom:14px" id="evColorPicker">
+      <div class="col-pick" data-color="#c8f564" onclick="pickEvColor('#c8f564')" style="background:#c8f564"></div>
+      <div class="col-pick" data-color="#64c8f5" onclick="pickEvColor('#64c8f5')" style="background:#64c8f5"></div>
+      <div class="col-pick" data-color="#f564a9" onclick="pickEvColor('#f564a9')" style="background:#f564a9"></div>
+      <div class="col-pick" data-color="#f5c842" onclick="pickEvColor('#f5c842')" style="background:#f5c842"></div>
+      <div class="col-pick" data-color="#a064f5" onclick="pickEvColor('#a064f5')" style="background:#a064f5"></div>
+      <div class="col-pick" data-color="#64f5b8" onclick="pickEvColor('#64f5b8')" style="background:#64f5b8"></div>
+    </div>
+    <label class="field-lbl">Reminder</label>
+    <select class="field-inp" id="evReminder" style="cursor:pointer;margin-bottom:16px">
+      <option value="0">No reminder</option>
+      <option value="5">5 min before</option>
+      <option value="10" selected>10 min before</option>
+      <option value="15">15 min before</option>
+      <option value="30">30 min before</option>
+      <option value="60">1 hour before</option>
+    </select>
+    <button class="btn-lime" id="schedSaveBtn" onclick="saveScheduleEvent()" style="display:block;width:100%;padding:13px;font-size:15px">Save ✓</button>
+    <button onclick="closeScheduleSheet()" style="display:block;width:100%;padding:10px;background:none;border:none;color:#50506a;font-size:14px;cursor:pointer;margin-top:6px">Cancel</button>
+  </div>
+</div>
 </div><!-- /app -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -484,12 +552,7 @@ async function handleAuth() {
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
     if (error) { errEl.textContent = 'Wrong email or password.'; btn.textContent='Sign In →'; btn.disabled=false; return; }
     currentUser = data.user;
-    try {
-      await finishLogin();
-    } catch(e) {
-      console.error('finishLogin error:', e);
-      errEl.textContent = 'Login error: ' + e.message;
-    }
+    await finishLogin();
   }
 
   btn.textContent = authModeVal==='login' ? 'Sign In →' : 'Create Account →';
@@ -584,6 +647,8 @@ function freshData() {
     struggles: [],
     identity: {statement:'',values:'',growing:'',love:'',release:''},
     friends: [],
+    morningDigestTime: '08:00',
+    scheduleEvents: [],
   };
 }
 
@@ -618,6 +683,7 @@ function render(name) {
   else if (name === 'weekly') renderWeekly();
   else if (name === 'journal') renderJournal();
   else if (name === 'progress') renderProgress();
+  else if (name === 'schedule') renderSchedule();
   else if (name === 'friends') renderFriends();
   else if (name === 'me') renderMe();
 }
@@ -849,16 +915,79 @@ function saveReminder() {
 function closeReminder(e) { if (!e || e.target===document.getElementById('reminderOverlay')) document.getElementById('reminderOverlay').classList.remove('open'); }
 
 function requestNotifPermission() {
-  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().then(p => { if(p==='granted') toast('Notifications enabled 🔔'); });
+  }
 }
-setInterval(() => {
+
+function glowNotif(title, body) {
+  if (Notification.permission !== 'granted') return;
+  new Notification(title, {
+    body,
+    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">✨</text></svg>',
+    badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">✨</text></svg>'
+  });
+}
+
+// Track which notifications fired this session
+const _notifFired = new Set();
+
+function checkNotifications() {
   if (Notification.permission !== 'granted' || !S) return;
   const now = new Date();
+  const todayDay = now.getDay();
   const hhmm = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const hh = now.getHours(), mm = now.getMinutes();
+  const totalMins = hh*60+mm;
+
+  // ── Morning summary ──
+  const mornTime = S.morningDigestTime || '08:00';
+  const mornKey = 'morning_' + now.toDateString();
+  if (hhmm === mornTime && !_notifFired.has(mornKey)) {
+    _notifFired.add(mornKey);
+    const allSubs = S.cats.flatMap(c=>c.subs);
+    const todayEvents = (S.scheduleEvents||[]).filter(ev => {
+      if (ev.type==='class'||ev.type==='habit') return (ev.days||[]).includes(todayDay);
+      if (ev.type==='event'||ev.type==='deadline') return ev.date === now.toISOString().slice(0,10);
+      return false;
+    });
+    const lines = [];
+    if (allSubs.length) lines.push(`${allSubs.length} habits to complete`);
+    todayEvents.forEach(ev => lines.push(`${ev.start} ${ev.title}`));
+    const wkToday = S.weekly.filter(s=>!s.isReflection).flatMap(s=>s.items.filter(it=>it.day===todayDay&&!it.done));
+    if (wkToday.length) lines.push(`${wkToday.length} weekly tasks`);
+    if (lines.length) glowNotif('Good morning! Here's your day ✨', lines.join(' · '));
+  }
+
+  // ── Habit reminders ──
   S.cats.forEach(cat => cat.subs.forEach(sub => {
-    if (sub.reminder === hhmm && !sub.done) new Notification('GlowUp ✨', {body:`Time for: ${sub.name}`,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">✨</text></svg>'});
+    if (!sub.reminder || sub.done) return;
+    const key = 'hab_' + sub.id + '_' + now.toDateString();
+    if (sub.reminder === hhmm && !_notifFired.has(key)) {
+      _notifFired.add(key);
+      glowNotif('GlowUp ✨', 'Time for: ' + sub.name);
+    }
   }));
-}, 60000);
+
+  // ── Schedule event reminders ──
+  (S.scheduleEvents||[]).forEach(ev => {
+    const appliesToday = (ev.type==='class'||ev.type==='habit')
+      ? (ev.days||[]).includes(todayDay)
+      : ev.date === now.toISOString().slice(0,10);
+    if (!appliesToday || !ev.start || !ev.reminder) return;
+    const [eh,em] = ev.start.split(':').map(Number);
+    const evMins = eh*60+em;
+    const remMins = parseInt(ev.reminder)||0;
+    const fireAt = evMins - remMins;
+    const key = 'sched_' + ev.id + '_' + now.toDateString();
+    if (totalMins === fireAt && !_notifFired.has(key)) {
+      _notifFired.add(key);
+      glowNotif(ev.title + (remMins>0?` in ${remMins} min`:'') + ' ⏰', ev.start + (ev.end?' – '+ev.end:''));
+    }
+  });
+}
+
+setInterval(checkNotifications, 30000); // check every 30s
 
 // ══════════════════════════════════════════════
 // WEEKLY PAGE
@@ -1109,6 +1238,347 @@ function openWkReminder(si,ii) {
   document.getElementById('reminderOverlay').classList.add('open');
   // Override save to target weekly item
   window._reminderTarget = 'weekly';
+}
+
+
+// ══════════════════════════════════════════════
+// SCHEDULE PAGE
+// ══════════════════════════════════════════════
+let schedView = 'day';   // 'day' | 'week'
+let schedDate = new Date();
+let editingEvId = null;
+let _evDays = [];
+let _evColor = '#64c8f5';
+
+function renderSchedule() {
+  const today = new Date();
+  const isToday = schedDate.toDateString() === today.toDateString();
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const shortDays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  // Nav header
+  const dateLabel = schedView === 'day'
+    ? schedDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})
+    : (() => {
+        const ws = new Date(schedDate); ws.setDate(schedDate.getDate()-schedDate.getDay());
+        const we = new Date(ws); we.setDate(ws.getDate()+6);
+        return ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+we.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      })();
+
+  const hdr = `
+    <div style="position:sticky;top:0;z-index:50;background:#0d0d0f;padding:44px 14px 10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <button onclick="schedNav(-1)" style="background:#14141a;border:1px solid #262636;border-radius:10px;padding:7px 12px;color:#e8e8f0;font-size:16px;cursor:pointer">‹</button>
+        <div style="text-align:center">
+          <div class="mono" style="font-size:10px;color:#50506a;letter-spacing:2px;text-transform:uppercase">${isToday&&schedView==='day'?'TODAY':''}</div>
+          <div style="font-size:14px;font-weight:600">${dateLabel}</div>
+        </div>
+        <button onclick="schedNav(1)" style="background:#14141a;border:1px solid #262636;border-radius:10px;padding:7px 12px;color:#e8e8f0;font-size:16px;cursor:pointer">›</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button onclick="setSchedView('day')" style="flex:1;padding:7px;background:${schedView==='day'?'rgba(100,200,245,.1)':'#14141a'};border:1px solid ${schedView==='day'?'#64c8f5':'#262636'};border-radius:10px;font-family:'DM Mono',monospace;font-size:11px;color:${schedView==='day'?'#64c8f5':'#50506a'};cursor:pointer">Day</button>
+        <button onclick="setSchedView('week')" style="flex:1;padding:7px;background:${schedView==='week'?'rgba(100,200,245,.1)':'#14141a'};border:1px solid ${schedView==='week'?'#64c8f5':'#262636'};border-radius:10px;font-family:'DM Mono',monospace;font-size:11px;color:${schedView==='week'?'#64c8f5':'#50506a'};cursor:pointer">Week</button>
+        ${!isToday||schedView==='week'?`<button onclick="schedGoToday()" style="padding:7px 12px;background:#14141a;border:1px solid #262636;border-radius:10px;font-family:'DM Mono',monospace;font-size:11px;color:#50506a;cursor:pointer">Today</button>`:''}
+        <button onclick="openScheduleSheet()" style="padding:7px 14px;background:#c8f564;border:none;border-radius:10px;font-size:14px;font-weight:700;color:#0d0d0f;cursor:pointer">+</button>
+      </div>
+    </div>`;
+
+  let bodyHtml = schedView === 'day' ? renderDayView() : renderWeekView();
+
+  document.getElementById('page-schedule').innerHTML = hdr + bodyHtml;
+
+  // Scroll to current time in day view
+  if (schedView === 'day' && isToday) {
+    setTimeout(() => {
+      const nowLine = document.getElementById('nowLine');
+      if (nowLine) nowLine.scrollIntoView({behavior:'smooth', block:'center'});
+    }, 100);
+  }
+}
+
+function getEventsForDay(date) {
+  const dayIdx = date.getDay();
+  const dateStr = date.toISOString().slice(0,10);
+  const events = S.scheduleEvents || [];
+
+  // Collect from schedule events
+  const evs = events.filter(ev => {
+    if (ev.type==='class'||ev.type==='habit') return (ev.days||[]).includes(dayIdx);
+    if (ev.type==='event'||ev.type==='deadline') return ev.date === dateStr;
+    return false;
+  });
+
+  // Add habits with reminders as blocks
+  if (date.toDateString() === new Date().toDateString() || true) {
+    S.cats.forEach(cat => cat.subs.forEach(sub => {
+      if (sub.reminder && !evs.find(e=>e._habitId===sub.id)) {
+        evs.push({id:'h_'+sub.id, _habitId:sub.id, title:sub.name, type:'habit',
+          start:sub.reminder, end:'', color:'#a064f5', reminder:0,
+          days:[0,1,2,3,4,5,6], done:sub.done});
+      }
+    }));
+    // Weekly tasks for this day
+    S.weekly.filter(s=>!s.isReflection).forEach(sec => sec.items.filter(it=>it.day===dayIdx).forEach(it => {
+      if (!evs.find(e=>e._wkId===it.id)) {
+        evs.push({id:'w_'+it.id, _wkId:it.id, title:it.text, type:'event',
+          start:it.reminder||'', end:'', color:'#64c8f5', reminder:0,
+          date:dateStr, done:it.done});
+      }
+    }));
+  }
+
+  return evs.sort((a,b)=>(a.start||'99:99').localeCompare(b.start||'99:99'));
+}
+
+function renderDayView() {
+  const dayEvs = getEventsForDay(schedDate);
+  const now = new Date();
+  const isToday = schedDate.toDateString() === now.toDateString();
+  const HOUR_H = 64; // px per hour
+  const START_H = 6; // 6am
+  const END_H = 24;  // midnight
+  const TOTAL_H = END_H - START_H;
+  const totalPx = TOTAL_H * HOUR_H;
+
+  // No-time events (deadlines etc with no start)
+  const noTime = dayEvs.filter(ev=>!ev.start);
+  const withTime = dayEvs.filter(ev=>ev.start);
+
+  // Build hour lines
+  let hoursHtml = '';
+  for (let h = START_H; h <= END_H; h++) {
+    const top = (h - START_H) * HOUR_H;
+    const label = h === 0 ? '12am' : h < 12 ? h+'am' : h === 12 ? '12pm' : (h-12)+'pm';
+    hoursHtml += `<div class="sched-hour" style="top:${top}px">${label}</div>`;
+    hoursHtml += `<div class="sched-line" style="top:${top}px"></div>`;
+  }
+
+  // Now line
+  let nowHtml = '';
+  if (isToday) {
+    const nowTop = ((now.getHours() + now.getMinutes()/60) - START_H) * HOUR_H;
+    if (nowTop >= 0 && nowTop <= totalPx) {
+      nowHtml = `<div class="sched-now" id="nowLine" style="top:${nowTop}px"></div>`;
+    }
+  }
+
+  // Event blocks
+  let blocksHtml = '';
+  withTime.forEach(ev => {
+    const [sh,sm] = ev.start.split(':').map(Number);
+    const topPx = ((sh + sm/60) - START_H) * HOUR_H;
+    if (topPx < 0 || topPx > totalPx) return;
+    let heightPx = HOUR_H;
+    if (ev.end) {
+      const [eh,em] = ev.end.split(':').map(Number);
+      heightPx = Math.max(28, ((eh+em/60)-(sh+sm/60))*HOUR_H);
+    }
+    const isDone = ev.done;
+    const typeIcon = ev.type==='class'?'📚':ev.type==='deadline'?'⚠️':ev.type==='habit'?'⏰':'📌';
+    blocksHtml += `
+      <div class="sched-block" onclick="tapEvent('${ev.id}')"
+        style="top:${topPx}px;height:${heightPx}px;background:${ev.color||'#64c8f5'}22;border-left:3px solid ${ev.color||'#64c8f5'};color:${ev.color||'#64c8f5'};opacity:${isDone?.5:1}">
+        <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${typeIcon} ${ev.title}${isDone?' ✓':''}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;opacity:.7">${ev.start}${ev.end?' – '+ev.end:''}</div>
+      </div>`;
+  });
+
+  // All-day / no-time strip
+  let allDayHtml = '';
+  if (noTime.length) {
+    allDayHtml = `<div style="padding:0 14px 8px;display:flex;gap:6px;flex-wrap:wrap">` +
+      noTime.map(ev=>`
+        <div onclick="tapEvent('${ev.id}')" style="padding:5px 10px;background:${ev.color||'#f5c842'}22;border:1px solid ${ev.color||'#f5c842'};border-radius:8px;font-size:11px;font-weight:600;color:${ev.color||'#f5c842'};cursor:pointer">
+          ⚠️ ${ev.title}
+        </div>`).join('') +
+      `</div>`;
+  }
+
+  return allDayHtml + `
+    <div style="position:relative;height:${totalPx}px;margin:0 6px;overflow:visible">
+      ${hoursHtml}${nowHtml}${blocksHtml}
+    </div>
+    <div style="height:20px"></div>`;
+}
+
+function renderWeekView() {
+  const shortDays = ['S','M','T','W','T','F','S'];
+  const weekStart = new Date(schedDate);
+  weekStart.setDate(schedDate.getDate() - schedDate.getDay());
+  const now = new Date();
+  const HOUR_H = 48;
+  const START_H = 7;
+  const END_H = 22;
+  const TOTAL_H = END_H - START_H;
+  const totalPx = TOTAL_H * HOUR_H;
+
+  // Day headers
+  const dayHdrs = Array.from({length:7},(_,i)=>{
+    const d = new Date(weekStart); d.setDate(weekStart.getDate()+i);
+    const isToday = d.toDateString()===now.toDateString();
+    return `<div class="wk-col" style="flex:1;text-align:center;padding:6px 2px;border-right:1px solid #1a1a24">
+      <div class="mono" style="font-size:9px;color:#50506a">${shortDays[i]}</div>
+      <div style="font-size:13px;font-weight:700;width:26px;height:26px;border-radius:50%;margin:2px auto;display:flex;align-items:center;justify-content:center;background:${isToday?'#64c8f5':'transparent'};color:${isToday?'#0d0d0f':'#e8e8f0'}">${d.getDate()}</div>
+    </div>`;
+  }).join('');
+
+  // Hour labels + event columns
+  let hoursCol = '';
+  for (let h = START_H; h <= END_H; h++) {
+    const top = (h - START_H) * HOUR_H;
+    const label = h < 12 ? h+'am' : h===12?'12pm':(h-12)+'pm';
+    hoursCol += `<div style="position:absolute;top:${top}px;left:0;width:36px;text-align:right;font-family:'DM Mono',monospace;font-size:8px;color:#50506a;padding-right:4px">${label}</div>`;
+  }
+
+  let dayColsHtml = Array.from({length:7},(_,i)=>{
+    const d = new Date(weekStart); d.setDate(weekStart.getDate()+i);
+    const evs = getEventsForDay(d).filter(ev=>ev.start);
+    const isToday = d.toDateString()===now.toDateString();
+    let blocks = '';
+    evs.forEach(ev=>{
+      const [sh,sm]=ev.start.split(':').map(Number);
+      const topPx=((sh+sm/60)-START_H)*HOUR_H;
+      if(topPx<0||topPx>totalPx) return;
+      let hPx=HOUR_H*0.8;
+      if(ev.end){const [eh,em]=ev.end.split(':').map(Number);hPx=Math.max(20,((eh+em/60)-(sh+sm/60))*HOUR_H);}
+      blocks+=`<div onclick="schedDate=new Date(${d.getTime()});setSchedView('day')" style="position:absolute;top:${topPx}px;left:1px;right:1px;height:${hPx}px;background:${ev.color||'#64c8f5'}33;border-left:2px solid ${ev.color||'#64c8f5'};border-radius:4px;overflow:hidden;cursor:pointer">
+        <div style="font-size:8px;font-weight:700;color:${ev.color||'#64c8f5'};padding:2px 3px;line-height:1.2;overflow:hidden">${ev.title}</div>
+      </div>`;
+    });
+    // Now line
+    let nowLine='';
+    if(isToday){const nowTop=((now.getHours()+now.getMinutes()/60)-START_H)*HOUR_H;if(nowTop>=0)nowLine=`<div style="position:absolute;left:0;right:0;top:${nowTop}px;height:2px;background:#f564a9;z-index:5"></div>`;}
+    return `<div class="wk-col" onclick="schedDate=new Date(${d.getTime()});schedView='day';renderSchedule()" style="position:relative;height:${totalPx}px;cursor:pointer">
+      ${Array.from({length:TOTAL_H+1},(_,h)=>`<div style="position:absolute;top:${h*HOUR_H}px;left:0;right:0;height:1px;background:#1a1a24"></div>`).join('')}
+      ${blocks}${nowLine}
+    </div>`;
+  }).join('');
+
+  return `
+    <div style="display:flex;margin:0 6px;border-bottom:1px solid #1a1a24">
+      <div style="width:36px;flex-shrink:0"></div>
+      ${dayHdrs}
+    </div>
+    <div style="display:flex;margin:0 6px;overflow:hidden">
+      <div style="width:36px;flex-shrink:0;position:relative;height:${totalPx}px">${hoursCol}</div>
+      <div style="display:flex;flex:1;position:relative;height:${totalPx}px">${dayColsHtml}</div>
+    </div>`;
+}
+
+function setSchedView(v) { schedView=v; renderSchedule(); }
+function schedNav(dir) {
+  if (schedView==='day') schedDate.setDate(schedDate.getDate()+dir);
+  else schedDate.setDate(schedDate.getDate()+dir*7);
+  renderSchedule();
+}
+function schedGoToday() { schedDate=new Date(); renderSchedule(); }
+
+function tapEvent(id) {
+  // Find event
+  const ev = (S.scheduleEvents||[]).find(e=>e.id===id);
+  if (!ev) return; // habit/weekly block — go to today/weekly
+  openScheduleSheet(id);
+}
+
+// ── Add / Edit event sheet ──
+function openScheduleSheet(evId) {
+  editingEvId = evId || null;
+  _evDays = [];
+  _evColor = '#64c8f5';
+
+  const ev = evId ? (S.scheduleEvents||[]).find(e=>e.id===evId) : null;
+  document.getElementById('schedSheetTitle').textContent = ev ? 'Edit Event' : 'Add Event';
+  document.getElementById('evTitle').value = ev?.title||'';
+  document.getElementById('evType').value = ev?.type||'class';
+  document.getElementById('evStart').value = ev?.start||'09:00';
+  document.getElementById('evEnd').value = ev?.end||'10:00';
+  document.getElementById('evReminder').value = ev?.reminder||'10';
+  document.getElementById('evDate').value = ev?.date||new Date().toISOString().slice(0,10);
+
+  if (ev?.days) _evDays = [...ev.days];
+  if (ev?.color) _evColor = ev.color;
+
+  // Update day picker UI
+  document.querySelectorAll('.day-pick-btn').forEach(btn => {
+    const d = parseInt(btn.dataset.day);
+    btn.classList.toggle('active', _evDays.includes(d));
+  });
+  // Update color picker
+  document.querySelectorAll('.col-pick').forEach(el => {
+    el.classList.toggle('active', el.dataset.color === _evColor);
+  });
+
+  updateEvTypeUI();
+  document.getElementById('schedSaveBtn').textContent = ev ? 'Save Changes ✓' : 'Add to Schedule ✓';
+  document.getElementById('scheduleSheet').classList.add('open');
+}
+
+function closeScheduleSheet(e) {
+  if (e && e.target !== document.getElementById('scheduleSheet')) return;
+  document.getElementById('scheduleSheet').classList.remove('open');
+  editingEvId = null;
+}
+
+function updateEvTypeUI() {
+  const type = document.getElementById('evType').value;
+  document.getElementById('evRepeatRow').style.display = (type==='class'||type==='habit') ? 'block' : 'none';
+  document.getElementById('evDateRow').style.display = (type==='event'||type==='deadline') ? 'block' : 'none';
+}
+
+function toggleEvDay(d) {
+  const idx = _evDays.indexOf(d);
+  if (idx===-1) _evDays.push(d); else _evDays.splice(idx,1);
+  document.querySelectorAll('.day-pick-btn').forEach(btn => {
+    btn.classList.toggle('active', _evDays.includes(parseInt(btn.dataset.day)));
+  });
+}
+
+function pickEvColor(c) {
+  _evColor = c;
+  document.querySelectorAll('.col-pick').forEach(el => el.classList.toggle('active', el.dataset.color===c));
+}
+
+function saveScheduleEvent() {
+  const title = document.getElementById('evTitle').value.trim();
+  if (!title) { toast('Add a title first'); return; }
+  const type = document.getElementById('evType').value;
+  const start = document.getElementById('evStart').value;
+  const end = document.getElementById('evEnd').value;
+  const reminder = document.getElementById('evReminder').value;
+  const date = document.getElementById('evDate').value;
+
+  if (!S.scheduleEvents) S.scheduleEvents = [];
+
+  if (editingEvId) {
+    const idx = S.scheduleEvents.findIndex(e=>e.id===editingEvId);
+    if (idx!==-1) {
+      S.scheduleEvents[idx] = {...S.scheduleEvents[idx], title, type, start, end, reminder:parseInt(reminder), color:_evColor,
+        days:(type==='class'||type==='habit')?[..._evDays]:undefined,
+        date:(type==='event'||type==='deadline')?date:undefined};
+    }
+    toast('Updated ✓');
+  } else {
+    S.scheduleEvents.push({
+      id: 'ev_'+Date.now(), title, type, start, end,
+      reminder: parseInt(reminder), color: _evColor,
+      days: (type==='class'||type==='habit') ? [..._evDays] : undefined,
+      date: (type==='event'||type==='deadline') ? date : undefined
+    });
+    toast('Added to schedule ✓');
+  }
+
+  document.getElementById('scheduleSheet').classList.remove('open');
+  debounceSave();
+  renderSchedule();
+  requestNotifPermission();
+}
+
+function deleteScheduleEvent(id) {
+  if (!confirm('Delete this event?')) return;
+  S.scheduleEvents = (S.scheduleEvents||[]).filter(e=>e.id!==id);
+  document.getElementById('scheduleSheet').classList.remove('open');
+  debounceSave(); renderSchedule();
+  toast('Deleted');
 }
 
 // ══════════════════════════════════════════════
@@ -1588,7 +2058,7 @@ function renderMe() {
     <div style="padding:0 14px;margin-bottom:20px">
       <div class="mono" style="font-size:10px;letter-spacing:2px;color:#50506a;text-transform:uppercase;display:block;margin-bottom:10px">Settings & Notifications</div>
       <div style="background:#14141a;border:1px solid #262636;border-radius:14px;overflow:hidden">
-        <div class="s-row"><span style="font-size:18px;width:30px;text-align:center;flex-shrink:0">🌅</span><div style="flex:1"><div style="font-size:14px;font-weight:600">Morning check-in</div><div class="mono" style="font-size:10px;color:#50506a">Start your habits</div></div><input type="time" class="tin" value="08:00"></div>
+        <div class="s-row"><span style="font-size:18px;width:30px;text-align:center;flex-shrink:0">🌅</span><div style="flex:1"><div style="font-size:14px;font-weight:600">Morning summary</div><div class="mono" style="font-size:10px;color:#50506a">Daily digest notification</div></div><input type="time" class="tin" id="morningDigestInp" value="${S.morningDigestTime||'08:00'}" onchange="S.morningDigestTime=this.value;debounceSave()"></div>
         <div class="s-row"><span style="font-size:18px;width:30px;text-align:center;flex-shrink:0">🌙</span><div style="flex:1"><div style="font-size:14px;font-weight:600">Evening wind-down</div><div class="mono" style="font-size:10px;color:#50506a">Journal & review</div></div><input type="time" class="tin" value="21:00"></div>
         <div class="s-row"><span style="font-size:18px;width:30px;text-align:center;flex-shrink:0">🔔</span><div style="flex:1"><div style="font-size:14px;font-weight:600">Browser notifications</div><div class="mono" style="font-size:10px;color:#50506a" id="notifStatus">Tap to enable</div></div><label class="tog-wrap"><input type="checkbox" id="notifToggle" onchange="toggleNotif(this)"><div class="tog-track"></div><div class="tog-thumb"></div></label></div>
         <div class="s-row"><span style="font-size:18px;width:30px;text-align:center;flex-shrink:0">🔄</span><div style="flex:1"><div style="font-size:14px;font-weight:600">Reset today</div><div class="mono" style="font-size:10px;color:#50506a">Clear today's checkmarks</div></div><button onclick="resetToday()" style="background:none;border:1px solid #32324a;border-radius:8px;padding:5px 12px;color:#8888a8;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer">Reset</button></div>
