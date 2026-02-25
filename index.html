@@ -602,6 +602,11 @@ function go(name) {
 
 function renderAll() { render('today'); }
 function render(name) {
+  if (!S) {
+    const el = document.getElementById('page-' + name);
+    if (el) el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:12px"><div style="font-size:32px">✨</div><div class="mono" style="font-size:11px;color:#50506a;letter-spacing:2px">LOADING…</div></div>';
+    return;
+  }
   if (name === 'today') renderToday();
   else if (name === 'weekly') renderWeekly();
   else if (name === 'journal') renderJournal();
