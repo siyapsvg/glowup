@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GlowUp">
+<meta name="theme-color" content="#0d0d0f">
+<title>GlowUp</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & BASE ── */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:#0d0d0f;color:#e8e8f0;font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 700px 500px at 0% 0%,rgba(200,245,100,.05),transparent 60%),radial-gradient(ellipse 600px 400px at 100% 100%,rgba(100,200,245,.04),transparent 60%)}
+input,textarea,select,button{font-family:'DM Sans',sans-serif}
+textarea{resize:none}
+input[type=range]{accent-color:#c8f564}
+input[type=time]{color-scheme:dark}
+::-webkit-scrollbar{display:none}
+scrollbar-width:none;
+
+/* ── TYPOGRAPHY ── */
+.serif{font-family:'Playfair Display',serif}
+.mono{font-family:'DM Mono',monospace}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+.fade-up{animation:fadeUp .3s ease both}
+
+/* ── LAYOUT ── */
+#app{position:relative;z-index:1;min-height:100vh}
+.page{display:none;padding-bottom:92px;animation:fadeUp .3s ease both}
+.page.active{display:block}
+
+/* ── NAV ── */
+#nav{position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,15,.97);backdrop-filter:blur(24px);border-top:1px solid #262636;display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom,0)}
+.nav-btn{flex:1;padding:10px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:#50506a;cursor:pointer;transition:color .2s;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.3px;text-transform:uppercase}
+.nav-btn .ico{font-size:17px;line-height:1}
+.nav-btn.active{color:#c8f564}
+.nav-dot{width:4px;height:4px;border-radius:50%;background:transparent}
+.nav-btn.active .nav-dot{background:#c8f564}
+
+/* ── CARDS & COMMON ── */
+.card{background:#14141a;border:1px solid #262636;border-radius:14px}
+.card-lime{border-color:#c8f564}
+.ph{padding:48px 18px 18px}
+.sec-lbl{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#50506a;text-transform:uppercase;padding:0 18px 10px;display:block}
+.divider{height:1px;background:#262636;margin:0 14px}
+
+/* ── BUTTONS ── */
+.btn-lime{background:#c8f564;color:#0d0d0f;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-weight:700;cursor:pointer;transition:opacity .15s}
+.btn-lime:active{opacity:.85}
+.btn-ghost{background:none;border:1px solid #32324a;border-radius:12px;color:#8888a8;font-size:14px;font-weight:600;cursor:pointer;padding:13px;width:100%;text-align:center;transition:border-color .2s}
+.btn-ghost:hover{border-color:#f56464;color:#f56464}
+.btn-save{display:block;width:100%;padding:13px;border:none;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;text-align:center;margin-bottom:20px}
+
+/* ── PROGRESS RING ── */
+.ring-wrap{position:relative;width:68px;height:68px;flex-shrink:0}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-track{fill:none;stroke:#20202d;stroke-width:7}
+.ring-fill{fill:none;stroke:url(#ringGrad);stroke-width:7;stroke-linecap:round;stroke-dasharray:188.4;stroke-dashoffset:188.4;transition:stroke-dashoffset .7s cubic-bezier(.34,1.56,.64,1)}
+.ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:#c8f564}
+
+/* ── TOGGLE ── */
+.tog-wrap{position:relative;width:44px;height:26px;flex-shrink:0;cursor:pointer;display:inline-block}
+.tog-wrap input{opacity:0;width:0;height:0;position:absolute}
+.tog-track{position:absolute;inset:0;background:#32324a;border-radius:13px;transition:background .2s}
+.tog-wrap input:checked+.tog-track{background:#c8f564}
+.tog-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .2s;pointer-events:none}
+.tog-wrap input:checked~.tog-thumb{left:21px}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(16px);background:#1a1a24;border:1px solid #32324a;border-radius:20px;padding:9px 18px;font-family:'DM Mono',monospace;font-size:11px;color:#e8e8f0;white-space:nowrap;opacity:0;transition:all .3s;z-index:500;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── OVERLAY / SHEET ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);z-index:300;opacity:0;pointer-events:none;transition:opacity .25s;display:flex;align-items:flex-end}
+.overlay.open{opacity:1;pointer-events:all}
+.sheet{background:#14141a;border:1px solid #262636;border-radius:20px 20px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom,0));width:100%;transform:translateY(60px);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.overlay.open .sheet{transform:translateY(0)}
+.sheet-handle{width:36px;height:4px;background:#32324a;border-radius:2px;margin:0 auto 18px}
+
+/* ── LOGIN ── */
+#loginScreen{position:fixed;inset:0;background:#0d0d0f;z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;animation:popIn .4s ease}
+.login-card{width:100%;max-width:360px;background:#14141a;border:1px solid #262636;border-radius:20px;padding:28px;position:relative;overflow:hidden}
+.login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#c8f564,#64c8f5,#f564a9)}
+.login-toggle{display:flex;background:#1a1a24;border-radius:10px;padding:3px;margin-bottom:24px;gap:3px}
+.lt-btn{flex:1;padding:8px;background:none;border:none;border-radius:8px;color:#50506a;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.lt-btn.active{background:#32324a;color:#c8f564}
+.field-lbl{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:#50506a;text-transform:uppercase;display:block;margin-bottom:6px}
+.field-inp{width:100%;background:#1a1a24;border:1px solid #262636;border-radius:10px;padding:12px 14px;color:#e8e8f0;font-size:15px;outline:none;transition:border-color .2s;margin-bottom:14px}
+.field-inp:focus{border-color:#c8f564}
+
+/* ── CAT SECTION ── */
+.cat-wrap{padding:0 14px;margin-bottom:12px}
+.cat-hd{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#14141a;border:1px solid #262636;border-radius:14px;cursor:pointer;transition:border-color .2s;position:relative}
+.cat-hd.open{border-radius:14px 14px 0 0;border-color:#c8f564;border-bottom-color:#262636}
+.cat-ic{font-size:20px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#1a1a24;border-radius:10px;flex-shrink:0;cursor:pointer;border:1px solid #262636}
+.cat-name-inp{background:transparent;border:none;border-bottom:1px solid transparent;outline:none;color:#e8e8f0;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;width:100%;cursor:pointer;transition:border-color .2s}
+.cat-name-inp:focus{cursor:text;border-bottom-color:#c8f564}
+.cat-pg{font-family:'DM Mono',monospace;font-size:9px;color:#50506a;margin-top:2px}
+.minibar{display:flex;align-items:center;gap:6px;margin-top:5px}
+.minibar-track{flex:1;height:3px;background:#20202d;border-radius:10px;overflow:hidden}
+.minibar-fill{height:100%;background:#c8f564;border-radius:10px;transition:width .4s}
+.minibar-pct{font-family:'DM Mono',monospace;font-size:9px;color:#c8f564;min-width:26px;text-align:right}
+.cat-ch{font-size:11px;color:#50506a;transition:transform .25s;flex-shrink:0}
+.cat-hd.open .cat-ch{transform:rotate(180deg)}
+.cat-del{background:none;border:none;color:#50506a;cursor:pointer;font-size:13px;padding:4px;opacity:.5;flex-shrink:0}
+.sub-list{background:#14141a;border:1px solid #c8f564;border-top:none;border-radius:0 0 14px 14px;overflow:hidden;display:none}
+.sub-list.open{display:block}
+.sub-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #262636;transition:background .15s}
+.sub-item:last-of-type{border-bottom:none}
+.sub-item.done{background:rgba(200,245,100,.03)}
+.sub-ck{width:22px;height:22px;border-radius:50%;border:2px solid #32324a;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .2s cubic-bezier(.34,1.56,.64,1);font-size:11px;color:transparent;background:transparent}
+.sub-item.done .sub-ck{background:#c8f564;border-color:#c8f564;color:#0d0d0f}
+.sub-name-inp{background:transparent;border:none;border-bottom:1px solid transparent;outline:none;color:#e8e8f0;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;width:100%;transition:all .2s}
+.sub-item.done .sub-name-inp{color:#50506a;text-decoration:line-through;text-decoration-color:rgba(200,245,100,.4)}
+.sub-name-inp:focus{border-bottom-color:#64c8f5}
+.sub-streak{font-family:'DM Mono',monospace;font-size:9px;color:#f5c842}
+.rem-tag{font-family:'DM Mono',monospace;font-size:9px;padding:2px 6px;border-radius:5px;border:1px solid rgba(100,200,245,.2);color:#64c8f5;background:rgba(100,200,245,.05);cursor:pointer;white-space:nowrap}
+.sub-del{background:none;border:none;color:#50506a;cursor:pointer;font-size:12px;opacity:.4;flex-shrink:0}
+.add-sub-row{display:flex;gap:8px;padding:9px 14px;border-top:1px dashed #262636}
+.add-sub-inp{flex:1;background:transparent;border:none;outline:none;color:#e8e8f0;font-size:13px}
+.add-sub-inp::placeholder,.field-inp::placeholder{color:#50506a}
+
+/* ── WEEKLY ── */
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;padding:0 14px 20px}
+.wd{border-radius:10px;border:1px solid #262636;background:#14141a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 3px;text-align:center}
+.wd.today{border-color:#64c8f5;color:#64c8f5}
+.wd.past{background:rgba(200,245,100,.07);border-color:#c8f564}
+.ws-block{margin-bottom:14px}
+.ws-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#14141a;border:1px solid #262636;border-radius:12px;cursor:pointer;transition:border-color .2s;font-size:14px;font-weight:600}
+.ws-block.open .ws-hd{border-radius:12px 12px 0 0;border-color:#c8f564;border-bottom-color:#262636}
+.ws-body{background:#14141a;border:1px solid #c8f564;border-top:none;border-radius:0 0 12px 12px;padding:14px;display:none}
+.ws-block.open .ws-body{display:block}
+.plan-item{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid #262636}
+.plan-item:last-of-type{border-bottom:none}
+.pcb{width:18px;height:18px;border-radius:5px;border:2px solid #32324a;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-size:10px;color:transparent;margin-top:1px;background:transparent}
+.plan-item.chk .pcb{background:#c8f564;border-color:#c8f564;color:#0d0d0f}
+.plan-item.chk .pt{color:#50506a;text-decoration:line-through}
+.pt{font-size:13px;flex:1;line-height:1.5}
+.ref-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;color:#c8f564;text-transform:uppercase;display:block;margin-bottom:6px;margin-top:12px}
+.ref-lbl:first-child{margin-top:0}
+.ref-ta{width:100%;background:#1a1a24;border:1px solid #262636;border-radius:10px;padding:11px;color:#e8e8f0;font-family:'Playfair Display',serif;font-size:14px;font-style:italic;line-height:1.6;height:80px;outline:none;transition:border-color .2s}
+.ref-ta:focus{border-color:#c8f564}
+.ref-ta::placeholder{color:#50506a;font-style:italic}
+
+/* ── MIND / HUB ── */
+.hub-tabs{display:flex;gap:6px;padding:0 14px 16px;overflow-x:auto;white-space:nowrap}
+.hub-tab{flex-shrink:0;padding:7px 14px;background:#14141a;border:1px solid #262636;border-radius:20px;font-family:'DM Mono',monospace;font-size:11px;color:#50506a;cursor:pointer;transition:all .2s;text-transform:capitalize}
+.hub-tab.active{border-color:#f564a9;color:#f564a9;background:rgba(245,100,169,.07)}
+.hub-panel{display:none;padding:0 14px}
+.hub-panel.active{display:block}
+.prompt-chips{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
+.p-chip{flex-shrink:0;padding:6px 12px;background:#14141a;border:1px solid #262636;border-radius:16px;font-size:11px;color:#8888a8;cursor:pointer;transition:all .2s;white-space:nowrap}
+.p-chip.active{border-color:#f564a9;color:#f564a9;background:rgba(245,100,169,.06)}
+.j-ta{width:100%;background:#14141a;border:1px solid #262636;border-radius:14px;padding:14px;color:#e8e8f0;font-family:'Playfair Display',serif;font-size:16px;font-style:italic;line-height:1.7;height:140px;outline:none;margin-bottom:10px;transition:border-color .2s}
+.j-ta:focus{border-color:#f564a9}
+.j-ta::placeholder{color:#50506a;font-style:italic}
+.entry-card{background:#14141a;border:1px solid #262636;border-left:3px solid #f564a9;border-radius:12px;padding:13px;margin-bottom:10px}
+.id-card{background:#14141a;border:1px solid #c8f564;border-radius:14px;padding:16px;margin-bottom:14px;position:relative;overflow:hidden}
+.id-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#c8f564,#64c8f5,#f564a9)}
+.id-ta{width:100%;background:transparent;border:none;outline:none;color:#e8e8f0;font-family:'Playfair Display',serif;font-size:17px;font-style:italic;line-height:1.5}
+.id-ta::placeholder{color:#50506a}
+.pillars-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.pillar-card{background:#14141a;border:1px solid #262636;border-radius:12px;padding:12px}
+.pillar-ta{width:100%;background:transparent;border:none;outline:none;color:#e8e8f0;font-family:'DM Sans',sans-serif;font-size:12px;line-height:1.5}
+.pillar-ta::placeholder{color:#50506a;font-size:11px}
+.goal-card{background:#14141a;border:1px solid #262636;border-radius:12px;padding:14px;margin-bottom:10px}
+.g-badge{font-family:'DM Mono',monospace;font-size:9px;padding:3px 8px;border-radius:10px;letter-spacing:1px;text-transform:uppercase;flex-shrink:0}
+.gs{background:rgba(100,200,245,.1);color:#64c8f5;border:1px solid rgba(100,200,245,.2)}
+.gl{background:rgba(160,100,245,.1);color:#a064f5;border:1px solid rgba(160,100,245,.2)}
+.g-title-inp{background:transparent;border:none;outline:none;color:#e8e8f0;font-size:14px;font-weight:600;flex:1;font-family:'DM Sans',sans-serif}
+.g-why-inp{width:100%;background:transparent;border:none;outline:none;color:#8888a8;font-family:'DM Mono',monospace;font-size:11px;margin-bottom:8px}
+.g-pb{height:4px;background:#20202d;border-radius:10px;overflow:hidden}
+.g-pf{height:100%;border-radius:10px;background:linear-gradient(90deg,#c8f564,#64c8f5);transition:width .4s}
+.str-card{background:#14141a;border:1px solid #262636;border-left:3px solid #f5c842;border-radius:12px;padding:13px;margin-bottom:10px}
+.str-inp{width:100%;background:#14141a;border:1px solid #262636;border-radius:12px;padding:11px;color:#e8e8f0;font-size:13px;height:70px;margin-bottom:8px;outline:none;transition:border-color .2s}
+.str-inp:focus{border-color:#f5c842}
+.str-inp::placeholder{color:#50506a}
+.str-rf-inp{width:100%;background:#14141a;border:1px solid #262636;border-radius:12px;padding:11px;color:#f5c842;font-family:'Playfair Display',serif;font-size:13px;font-style:italic;height:60px;margin-bottom:8px;outline:none;transition:border-color .2s}
+.str-rf-inp:focus{border-color:#f5c842}
+.str-rf-inp::placeholder{color:#50506a;font-style:italic}
+
+/* ── PROGRESS ── */
+.period-tabs{display:flex;gap:6px;padding:0 14px 20px}
+.ppt{padding:7px 14px;background:#14141a;border:1px solid #262636;border-radius:20px;font-family:'DM Mono',monospace;font-size:11px;color:#50506a;cursor:pointer;transition:all .2s}
+.ppt.active{border-color:#64f5b8;color:#64f5b8;background:rgba(100,245,184,.06)}
+.prog-overview{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px;margin-bottom:20px}
+.po-card{background:#14141a;border:1px solid #262636;border-radius:14px;padding:14px}
+.heatmap{display:flex;flex-wrap:wrap;gap:3px}
+.hm-cell{border-radius:3px;background:#20202d;transition:background .2s}
+.hm-cell.l1{background:rgba(200,245,100,.2)}
+.hm-cell.l2{background:rgba(200,245,100,.45)}
+.hm-cell.l3{background:rgba(200,245,100,.7)}
+.hm-cell.l4{background:#c8f564}
+.cp-card{background:#14141a;border:1px solid #262636;border-radius:14px;padding:14px;margin-bottom:10px}
+
+/* ── FRIENDS ── */
+.share-card{margin:0 14px 20px;background:#14141a;border:1px solid #32324a;border-radius:16px;padding:18px;position:relative;overflow:hidden}
+.share-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#f5c842,#f564a9)}
+.code-box{background:#0d0d0f;border:1px solid #262636;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.lb-card{background:#14141a;border:1px solid #262636;border-radius:14px;overflow:hidden}
+.lb-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #262636}
+.lb-row:last-child{border-bottom:none}
+.lb-row.you{background:rgba(200,245,100,.03)}
+
+/* ── ME PAGE ── */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 14px;margin-bottom:20px}
+.stat-card{background:#14141a;border:1px solid #262636;border-radius:12px;padding:12px;text-align:center}
+.id-snap{background:#14141a;border:1px solid #262636;border-radius:14px;padding:16px;position:relative;overflow:hidden}
+.id-snap::after{content:'I AM';position:absolute;right:10px;top:6px;font-family:'Playfair Display',serif;font-size:56px;font-weight:900;color:rgba(200,245,100,.04);line-height:1;pointer-events:none}
+
+/* ── EMOJI PICKER ── */
+.em-grid{display:flex;flex-wrap:wrap;gap:6px}
+.em-btn{font-size:24px;width:44px;height:44px;border-radius:10px;background:#1a1a24;border:none;cursor:pointer}
+.em-btn:active{background:#20202d}
+
+/* ── SETTINGS ROW ── */
+.s-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #262636}
+.s-row:last-child{border-bottom:none}
+.tin{background:#1a1a24;border:1px solid #262636;border-radius:8px;padding:5px 10px;color:#e8e8f0;font-family:'DM Mono',monospace;font-size:12px;outline:none}
+
+/* ── ADD ROW ── */
+.add-row{padding:0 14px 20px;display:flex;gap:10px}
+.add-inp{flex:1;background:#14141a;border:1px solid #262636;border-radius:12px;padding:11px 14px;color:#e8e8f0;font-size:14px;outline:none;transition:border-color .2s}
+.add-inp:focus{border-color:#c8f564}
+.add-inp::placeholder{color:#50506a}
+.add-plan-row{display:flex;gap:8px;margin-top:10px}
+.add-plan-inp{flex:1;background:#1a1a24;border:1px solid #262636;border-radius:8px;padding:7px 12px;color:#e8e8f0;font-size:13px;outline:none}
+.add-plan-inp:focus{border-color:#c8f564}
+.add-plan-inp::placeholder{color:#50506a}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- ══ LOGIN ══ -->
+<div id="loginScreen">
+  <div style="text-align:center;margin-bottom:32px">
+    <div class="serif" style="font-size:52px;font-weight:900;background:linear-gradient(135deg,#c8f564,#64c8f5);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">GlowUp</div>
+    <div class="mono" style="font-size:10px;color:#50506a;letter-spacing:3px;text-transform:uppercase;margin-top:8px">Your identity. Your progress.</div>
+  </div>
+  <div class="login-card">
+    <div class="login-toggle">
+      <button class="lt-btn active" id="ltLogin" onclick="switchAuth('login')">Sign In</button>
+      <button class="lt-btn" id="ltReg" onclick="switchAuth('register')">Create Account</button>
+    </div>
+    <label class="field-lbl">Email Address</label>
+    <input class="field-inp" id="authUser" type="email" placeholder="you@email.com" autocapitalize="none" autocomplete="email" inputmode="email">
+    <label class="field-lbl">Password</label>
+    <input class="field-inp" id="authPass" type="password" placeholder="••••••••" autocomplete="current-password">
+    <div id="displayNameField" style="display:none">
+      <label class="field-lbl">Display Name</label>
+      <input class="field-inp" id="authDisplay" type="text" placeholder="Your name (e.g. Maya)">
+    </div>
+    <button class="btn-lime" id="authBtn" onclick="handleAuth()" style="width:100%;padding:14px;font-size:15px;margin-top:4px">Sign In →</button>
+    <div class="mono" id="authErr" style="font-size:11px;color:#f56464;text-align:center;margin-top:10px;min-height:16px"></div>
+  </div>
+  <div class="mono" style="font-size:10px;color:#50506a;text-align:center;margin-top:16px;line-height:1.8">
+    ☁️ Your data saves to this browser's storage.<br>
+    Share this HTML file with your friend — you each create your own account.
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app" style="display:none">
+
+<!-- PAGES -->
+<div class="page active" id="page-today"></div>
+<div class="page" id="page-weekly"></div>
+<div class="page" id="page-journal"></div>
+<div class="page" id="page-progress"></div>
+<div class="page" id="page-friends"></div>
+<div class="page" id="page-me"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <button class="nav-btn active" data-page="today" onclick="go('today')"><span class="ico">✦</span><span>Today</span><span class="nav-dot"></span></button>
+  <button class="nav-btn" data-page="weekly" onclick="go('weekly')"><span class="ico">📅</span><span>Weekly</span><span class="nav-dot"></span></button>
+  <button class="nav-btn" data-page="journal" onclick="go('journal')"><span class="ico">📓</span><span>Mind</span><span class="nav-dot"></span></button>
+  <button class="nav-btn" data-page="progress" onclick="go('progress')"><span class="ico">📈</span><span>Progress</span><span class="nav-dot"></span></button>
+  <button class="nav-btn" data-page="friends" onclick="go('friends')"><span class="ico">🏆</span><span>Friends</span><span class="nav-dot"></span></button>
+  <button class="nav-btn" data-page="me" onclick="go('me')"><span class="ico">🌟</span><span>Me</span><span class="nav-dot"></span></button>
+</nav>
+
+<!-- OVERLAYS -->
+<div class="overlay" id="emojiOverlay" onclick="closeEmoji(event)">
+  <div class="sheet"><div class="sheet-handle"></div>
+    <div class="mono" style="font-size:10px;color:#50506a;text-transform:uppercase;letter-spacing:1px;text-align:center;margin-bottom:12px">Choose Emoji</div>
+    <div class="em-grid" id="emojiGrid"></div>
+  </div>
+</div>
+
+<div class="overlay" id="reminderOverlay" onclick="closeReminder(event)">
+  <div class="sheet"><div class="sheet-handle"></div>
+    <div class="serif" style="font-size:20px;font-style:italic;text-align:center;margin-bottom:8px">Set Reminder ⏰</div>
+    <div id="remName" style="font-size:15px;font-weight:600;text-align:center;margin-bottom:16px"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <label class="mono" style="font-size:11px;color:#8888a8;flex:1">Remind me at</label>
+      <input type="time" class="tin" id="remTime" value="08:00">
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <label class="mono" style="font-size:11px;color:#8888a8;flex:1">Repeat</label>
+      <select class="tin" id="remRepeat"><option>Every day</option><option>Weekdays only</option><option>Weekends only</option></select>
+    </div>
+    <button class="btn-lime" onclick="saveReminder()" style="display:block;width:100%;padding:13px;font-size:15px;margin-top:10px">Save Reminder 🔔</button>
+    <button onclick="closeReminder()" style="display:block;width:100%;padding:10px;background:none;border:none;color:#50506a;font-size:14px;cursor:pointer;margin-top:6px">Cancel</button>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ══════════════════════════════════════════════
+// SUPABASE CONFIG
+// Paste your own URL and anon key here after
+// following the setup guide.
+// ══════════════════════════════════════════════
+const SUPABASE_URL = 'PASTE_YOUR_SUPABASE_URL_HERE';
+const SUPABASE_ANON_KEY = 'PASTE_YOUR_SUPABASE_ANON_KEY_HERE';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── Local cache so the UI stays fast ──
+const LS = {
+  get: k => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} },
+  del: k => localStorage.removeItem(k),
+};
+
+// ══════════════════════════════════════════════
+// DATA LOAD / SAVE  (Supabase as source of truth,
+// localStorage as instant local cache)
+// ══════════════════════════════════════════════
+let currentUser = null;   // Supabase user object
+let S = null;             // habit data object
+
+function genCode(email) {
+  return 'GLW' + email.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5).padEnd(5,'X');
+}
+
+async function loadData() {
+  const uid = currentUser.id;
+  const today = new Date().toDateString();
+
+  // Try local cache first for instant render
+  const cached = LS.get('glowup_data_' + uid);
+  if (cached) {
+    S = cached;
+    render(currentTab);
+  }
+
+  // Always fetch fresh from Supabase
+  const { data, error } = await sb
+    .from('user_data')
+    .select('data')
+    .eq('user_id', uid)
+    .single();
+
+  if (data?.data) {
+    S = data.data;
+  } else if (!S) {
+    S = freshData();
+  }
+
+  // Handle day rollover
+  if (S.lastDate !== today) {
+    if (S.lastDate) {
+      const pct = calcPct();
+      S.dayHistory = S.dayHistory || {};
+      S.dayHistory[S.lastDate] = pct;
+      if (pct === 100) S.perfectDays = (S.perfectDays || 0) + 1;
+    }
+    S.cats = S.cats.map(c => ({
+      ...c,
+      subs: c.subs.map(h => ({
+        ...h,
+        streak: h.done ? (h.streak||0)+1 : 0,
+        bestStreak: Math.max(h.bestStreak||0, h.done ? (h.streak||0)+1 : 0),
+        done: false
+      }))
+    }));
+    S.lastDate = today;
+  }
+
+  LS.set('glowup_data_' + uid, S);
+  render(currentTab);
+  await pushLeaderboard();
+}
+
+// Save to both local cache AND Supabase
+let saveTimer;
+async function saveData() {
+  if (!currentUser || !S) return;
+  const uid = currentUser.id;
+  LS.set('glowup_data_' + uid, S);
+  await sb.from('user_data').upsert({ user_id: uid, data: S, updated_at: new Date().toISOString() });
+  await pushLeaderboard();
+}
+
+function debounceSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveData, 800);
+}
+
+async function pushLeaderboard() {
+  if (!currentUser || !S) return;
+  const uid = currentUser.id;
+  const profile = LS.get('glowup_profile_' + uid) || {};
+  const allSubs = S.cats.flatMap(c => c.subs);
+  const streak = Math.max(...allSubs.map(s => s.streak||0), 0);
+  const pct = calcPct();
+  const code = profile.friend_code || genCode(currentUser.email || uid);
+  await sb.from('leaderboard').upsert({
+    user_id: uid,
+    display_name: profile.display_name || currentUser.email?.split('@')[0] || 'Friend',
+    friend_code: code,
+    streak,
+    today_pct: pct,
+    perfect_days: S.perfectDays || 0,
+    updated_at: new Date().toISOString()
+  });
+}
+
+// ══════════════════════════════════════════════
+// AUTH  (Supabase handles passwords securely —
+// bcrypt hashing, sessions, everything)
+// ══════════════════════════════════════════════
+let authModeVal = 'login';
+
+function switchAuth(mode) {
+  authModeVal = mode;
+  document.getElementById('ltLogin').classList.toggle('active', mode==='login');
+  document.getElementById('ltReg').classList.toggle('active', mode==='register');
+  document.getElementById('displayNameField').style.display = mode==='register' ? 'block' : 'none';
+  document.getElementById('authBtn').textContent = mode==='login' ? 'Sign In →' : 'Create Account →';
+  document.getElementById('authErr').textContent = '';
+}
+
+async function handleAuth() {
+  const email = document.getElementById('authUser').value.trim().toLowerCase();
+  const password = document.getElementById('authPass').value;
+  const display = document.getElementById('authDisplay')?.value.trim() || '';
+  const errEl = document.getElementById('authErr');
+  const btn = document.getElementById('authBtn');
+  errEl.textContent = '';
+
+  // Basic validation
+  if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
+  if (!email.includes('@')) { errEl.textContent = 'Please enter a valid email address.'; return; }
+
+  btn.textContent = 'Please wait…';
+  btn.disabled = true;
+
+  if (authModeVal === 'register') {
+    if (password.length < 6) { errEl.textContent = 'Password must be 6+ characters.'; btn.textContent='Create Account →'; btn.disabled=false; return; }
+
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if (error) { errEl.textContent = error.message; btn.textContent='Create Account →'; btn.disabled=false; return; }
+
+    // Save display name and friend code to profiles table
+    const uid = data.user.id;
+    const code = genCode(email);
+    await sb.from('profiles').upsert({ user_id: uid, display_name: display||email.split('@')[0], friend_code: code });
+    LS.set('glowup_profile_' + uid, { display_name: display||email.split('@')[0], friend_code: code });
+
+    // Supabase may require email confirmation — handle both cases
+    if (data.session) {
+      currentUser = data.user;
+      await finishLogin();
+    } else {
+      errEl.style.color = '#c8f564';
+      errEl.textContent = 'Check your email to confirm your account, then sign in!';
+      switchAuth('login');
+    }
+  } else {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) { errEl.textContent = 'Wrong email or password.'; btn.textContent='Sign In →'; btn.disabled=false; return; }
+    currentUser = data.user;
+    await finishLogin();
+  }
+
+  btn.textContent = authModeVal==='login' ? 'Sign In →' : 'Create Account →';
+  btn.disabled = false;
+}
+
+async function finishLogin() {
+  // Load cached profile
+  const uid = currentUser.id;
+  let profile = LS.get('glowup_profile_' + uid);
+  if (!profile) {
+    const { data } = await sb.from('profiles').select('*').eq('user_id', uid).single();
+    if (data) {
+      profile = data;
+      LS.set('glowup_profile_' + uid, data);
+    } else {
+      // Create profile if somehow missing
+      const code = genCode(currentUser.email || uid);
+      profile = { display_name: currentUser.email?.split('@')[0] || 'Friend', friend_code: code };
+      await sb.from('profiles').upsert({ user_id: uid, ...profile });
+      LS.set('glowup_profile_' + uid, profile);
+    }
+  }
+
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  go('today');
+  await loadData();
+}
+
+async function logout() {
+  if (!confirm('Sign out?')) return;
+  await sb.auth.signOut();
+  currentUser = null; S = null;
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('authUser').value = '';
+  document.getElementById('authPass').value = '';
+  switchAuth('login');
+}
+
+// ══════════════════════════════════════════════
+// DEFAULT DATA
+// ══════════════════════════════════════════════
+function freshData() {
+  return {
+    cats: [
+      {id:1,name:'Morning Routine',icon:'🌅',open:false,totalDone:0,subs:[
+        {id:11,name:'Wake up at 8 AM',streak:0,bestStreak:0,done:false,reminder:'08:00',totalDone:0},
+        {id:12,name:'Drink water immediately',streak:0,bestStreak:0,done:false,reminder:'08:05',totalDone:0},
+        {id:13,name:'Make bed',streak:0,bestStreak:0,done:false,reminder:'',totalDone:0},
+      ]},
+      {id:2,name:'Skincare Routine',icon:'🌿',open:false,totalDone:0,subs:[
+        {id:21,name:'Wash face (AM)',streak:0,bestStreak:0,done:false,reminder:'08:15',totalDone:0},
+        {id:22,name:'Moisturize & SPF',streak:0,bestStreak:0,done:false,reminder:'08:20',totalDone:0},
+        {id:23,name:'Evening cleanse',streak:0,bestStreak:0,done:false,reminder:'21:00',totalDone:0},
+        {id:24,name:'Night moisturizer',streak:0,bestStreak:0,done:false,reminder:'21:10',totalDone:0},
+      ]},
+      {id:3,name:'Shower & Body Care',icon:'🚿',open:false,totalDone:0,subs:[
+        {id:31,name:'Shower',streak:0,bestStreak:0,done:false,reminder:'',totalDone:0},
+        {id:32,name:'Body lotion / oil',streak:0,bestStreak:0,done:false,reminder:'',totalDone:0},
+        {id:33,name:'Look presentable',streak:0,bestStreak:0,done:false,reminder:'09:00',totalDone:0},
+      ]},
+      {id:4,name:'Nourishment',icon:'🥗',open:false,totalDone:0,subs:[
+        {id:41,name:'Eat per meal plan',streak:0,bestStreak:0,done:false,reminder:'12:00',totalDone:0},
+        {id:42,name:'Drink 8 glasses of water',streak:0,bestStreak:0,done:false,reminder:'10:00',totalDone:0},
+        {id:43,name:'No skipping meals',streak:0,bestStreak:0,done:false,reminder:'',totalDone:0},
+      ]},
+      {id:5,name:'School & Growth',icon:'📚',open:false,totalDone:0,subs:[
+        {id:51,name:'Finish homework',streak:0,bestStreak:0,done:false,reminder:'16:00',totalDone:0},
+        {id:52,name:'Review class notes',streak:0,bestStreak:0,done:false,reminder:'17:00',totalDone:0},
+        {id:53,name:'Learn something new',streak:0,bestStreak:0,done:false,reminder:'',totalDone:0},
+      ]},
+      {id:6,name:'Mind & Soul',icon:'✨',open:false,totalDone:0,subs:[
+        {id:61,name:'Journal / Reflect',streak:0,bestStreak:0,done:false,reminder:'21:00',totalDone:0},
+        {id:62,name:'5-min breathing',streak:0,bestStreak:0,done:false,reminder:'',totalDone:0},
+        {id:63,name:'Gratitude moment',streak:0,bestStreak:0,done:false,reminder:'',totalDone:0},
+      ]},
+    ],
+    weekly: [
+      {key:'meal',title:'Meal Planning & Prep',icon:'🥗',open:true,items:[{id:'m1',text:'Plan meals for the week',done:false},{id:'m2',text:'Write grocery list',done:false},{id:'m3',text:'Prep lunches / snacks',done:false},{id:'m4',text:'Prep dinners if possible',done:false}],r1:'',r2:'',r3:''},
+      {key:'laundry',title:'Laundry & Clothes',icon:'👗',open:false,items:[{id:'l1',text:'Do laundry',done:false},{id:'l2',text:'Fold & put away',done:false},{id:'l3',text:'Plan outfits for the week',done:false}],r1:'',r2:'',r3:''},
+      {key:'hw',title:'Homework Planning',icon:'📚',open:false,items:[{id:'h1',text:'List all assignments due',done:false},{id:'h2',text:'Break into daily tasks',done:false},{id:'h3',text:'Set deadlines for each',done:false},{id:'h4',text:'Check upcoming tests',done:false}],r1:'',r2:'',r3:''},
+      {key:'self',title:'Self-Care Planning',icon:'💆',open:false,items:[{id:'s1',text:'Schedule time just for me',done:false},{id:'s2',text:'Social plan',done:false},{id:'s3',text:'Rest & sleep intention',done:false}],r1:'',r2:'',r3:''},
+      {key:'review',title:'Weekly Reflection',icon:'🌟',open:false,isReflection:true,items:[],r1:'',r2:'',r3:''},
+    ],
+    lastDate: new Date().toDateString(),
+    dayHistory: {},
+    perfectDays: 0,
+    entries: [],
+    goals: [],
+    struggles: [],
+    identity: {statement:'',values:'',growing:'',love:'',release:''},
+    friends: [],
+  };
+}
+
+function calcPct() {
+  const all = S.cats.flatMap(c=>c.subs);
+  return all.length ? Math.round(all.filter(s=>s.done).length / all.length * 100) : 0;
+}
+
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
+let currentTab = 'today';
+function go(name) {
+  currentTab = name;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelector(`[data-page="${name}"]`)?.classList.add('active');
+  window.scrollTo({top:0});
+  render(name);
+}
+
+function renderAll() { render('today'); }
+function render(name) {
+  if (name === 'today') renderToday();
+  else if (name === 'weekly') renderWeekly();
+  else if (name === 'journal') renderJournal();
+  else if (name === 'progress') renderProgress();
+  else if (name === 'friends') renderFriends();
+  else if (name === 'me') renderMe();
+}
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ══════════════════════════════════════════════
+// TODAY PAGE
+// ══════════════════════════════════════════════
+const EMOJIS = ['🌅','🌿','🚿','🥗','📚','✨','⭐','🎯','💫','🌱','🔑','💎','🚀','🧘','🏃','📖','🎨','🧴','💧','🍎','🧠','❤️','🌸','🌙','☀️','🏋️','🎵','✍️','🧹','👗','💤','🛁','🪥','💊','🏃‍♀️','🦋','🌊','🎀','🌺','💐'];
+
+function renderToday() {
+  const h = new Date().getHours();
+  const greet = h<12?'Good morning ✨':h<17?'Good afternoon ☀️':'Good evening 🌙';
+  const allSubs = S.cats.flatMap(c=>c.subs);
+  const done = allSubs.filter(s=>s.done).length;
+  const total = allSubs.length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  const maxStreak = Math.max(...allSubs.map(s=>s.streak||0), 0);
+  const C = 188.4;
+  const offset = C - (pct/100)*C;
+  const msgs = ["Let's get started 💪","Keep going 🌱","Halfway there ⚡","Almost there! 🔥","On fire! 🌟","PERFECT DAY 🏆"];
+  const msg = msgs[Math.min(Math.floor(pct/20),5)];
+
+  let catsHtml = S.cats.map(cat => {
+    const cd = cat.subs.filter(s=>s.done).length;
+    const ct = cat.subs.length;
+    const cp = ct ? Math.round(cd/ct*100) : 0;
+    const subsHtml = cat.subs.map(sub => `
+      <div class="sub-item${sub.done?' done':''}" id="sub-${sub.id}">
+        <div class="sub-ck" onclick="toggleSub(${cat.id},${sub.id})">✓</div>
+        <div style="flex:1;min-width:0">
+          <input class="sub-name-inp" value="${esc(sub.name)}" onchange="updateSubName(${cat.id},${sub.id},this.value)">
+          <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+            ${sub.streak>0?`<span class="sub-streak">🔥 ${sub.streak}d</span>`:''}
+            <span class="rem-tag" onclick="openReminder(${cat.id},${sub.id})">${sub.reminder||'⏰ set'}</span>
+          </div>
+        </div>
+        <button class="sub-del" onclick="deleteSub(${cat.id},${sub.id})">✕</button>
+      </div>`).join('');
+    return `
+      <div class="cat-wrap">
+        <div class="cat-hd${cat.open?' open':''}" id="cathd-${cat.id}">
+          <div class="cat-ic" onclick="openEmojiPicker(${cat.id})">${cat.icon}</div>
+          <div style="flex:1;min-width:0">
+            <input class="cat-name-inp" value="${esc(cat.name)}" onclick="event.stopPropagation()" onchange="updateCatName(${cat.id},this.value)">
+            <div class="cat-pg">${cd} of ${ct} done</div>
+            <div class="minibar">
+              <div class="minibar-track"><div class="minibar-fill" style="width:${cp}%"></div></div>
+              <div class="minibar-pct">${cp}%</div>
+            </div>
+          </div>
+          <button class="cat-del" onclick="event.stopPropagation();deleteCat(${cat.id})">✕</button>
+          <span class="cat-ch">▼</span>
+        </div>
+        <div class="sub-list${cat.open?' open':''}" id="sublist-${cat.id}">
+          ${subsHtml}
+          <div class="add-sub-row">
+            <input class="add-sub-inp" id="asi-${cat.id}" placeholder="Add habit to this category…" onkeydown="if(event.key==='Enter')addSub(${cat.id})">
+            <button style="background:none;border:1px solid #c8f564;border-radius:7px;padding:3px 10px;color:#c8f564;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer" onclick="addSub(${cat.id})">+</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('page-today').innerHTML = `
+    <div class="ph">
+      <div class="mono" style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#c8f564;display:block;margin-bottom:6px">${greet}</div>
+      <div class="serif" style="font-size:32px;font-weight:700;line-height:1.15;display:block">Today is your<br><em style="color:#c8f564">day to show up.</em></div>
+    </div>
+    <div class="mono" style="display:block;padding:0 18px 14px;font-size:10px;color:#50506a">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</div>
+
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 18px;background:#14141a;border-top:1px solid #262636;border-bottom:1px solid #262636;margin-bottom:20px">
+      <div class="ring-wrap">
+        <svg width="68" height="68" viewBox="0 0 68 68">
+          <defs><linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#c8f564"/><stop offset="100%" stop-color="#64c8f5"/></linearGradient></defs>
+          <circle class="ring-track" cx="34" cy="34" r="30"/>
+          <circle class="ring-fill" cx="34" cy="34" r="30" style="stroke-dashoffset:${offset}"/>
+        </svg>
+        <div class="ring-pct">${pct}%</div>
+      </div>
+      <div style="flex:1">
+        <div class="serif" style="font-size:22px;font-weight:700;line-height:1">${done} <span style="font-size:12px;color:#50506a;font-family:'DM Sans',sans-serif;font-weight:400">/ ${total} done</span></div>
+        <div class="mono" style="font-size:10px;color:#8888a8;margin-top:4px;display:block">${msg}</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:22px">🔥</div>
+        <div class="serif" style="font-size:20px;font-weight:700;color:#f5c842;line-height:1">${maxStreak}</div>
+        <div class="mono" style="font-size:9px;color:#50506a;text-transform:uppercase;letter-spacing:1px">day streak</div>
+      </div>
+    </div>
+
+    <span class="sec-lbl">Habit Categories</span>
+    ${catsHtml}
+    <div class="add-row">
+      <input class="add-inp" id="newCatInp" placeholder="New category (e.g. Evening Routine)" onkeydown="if(event.key==='Enter')addCategory()">
+      <button class="btn-lime" onclick="addCategory()" style="padding:0 16px;font-size:14px">+ Add</button>
+    </div>`;
+
+  // Re-attach cat toggle listeners
+  S.cats.forEach(cat => {
+    const hd = document.getElementById('cathd-'+cat.id);
+    if (hd) hd.addEventListener('click', (e) => {
+      if (e.target.tagName==='INPUT'||e.target.tagName==='BUTTON') return;
+      toggleCat(cat.id);
+    });
+  });
+}
+
+function toggleCat(id) {
+  const cat = S.cats.find(c=>c.id===id);
+  if (cat) cat.open = !cat.open;
+  debounceSave();
+  renderToday();
+}
+function updateCatName(id, val) {
+  const cat = S.cats.find(c=>c.id===id);
+  if (cat) { cat.name = val; debounceSave(); }
+}
+function deleteCat(id) {
+  if (!confirm('Delete this category?')) return;
+  S.cats = S.cats.filter(c=>c.id!==id);
+  debounceSave(); renderToday();
+}
+function toggleSub(cid, sid) {
+  const cat = S.cats.find(c=>c.id===cid);
+  const sub = cat?.subs.find(s=>s.id===sid);
+  if (!sub) return;
+  sub.done = !sub.done;
+  if (sub.done) { sub.totalDone=(sub.totalDone||0)+1; cat.totalDone=(cat.totalDone||0)+1; }
+  debounceSave(); renderToday();
+  if (sub.done) toast(`${sub.name} ✓`);
+}
+function updateSubName(cid, sid, val) {
+  const sub = S.cats.find(c=>c.id===cid)?.subs.find(s=>s.id===sid);
+  if (sub) { sub.name = val; debounceSave(); }
+}
+function deleteSub(cid, sid) {
+  const cat = S.cats.find(c=>c.id===cid);
+  if (cat) { cat.subs = cat.subs.filter(s=>s.id!==sid); debounceSave(); renderToday(); }
+}
+function addSub(cid) {
+  const inp = document.getElementById('asi-'+cid);
+  const name = inp?.value.trim();
+  if (!name) return;
+  const cat = S.cats.find(c=>c.id===cid);
+  if (cat) { cat.subs.push({id:Date.now(),name,streak:0,bestStreak:0,done:false,reminder:'',totalDone:0}); }
+  inp.value = ''; debounceSave(); renderToday(); toast('Habit added ✨');
+}
+function addCategory() {
+  const inp = document.getElementById('newCatInp');
+  const name = inp?.value.trim();
+  if (!name) return;
+  const icons = ['⭐','🎯','💫','🌱','🔑','💎','🚀','🧘'];
+  S.cats.push({id:Date.now(),name,icon:icons[S.cats.length%icons.length],open:true,totalDone:0,subs:[]});
+  inp.value = ''; debounceSave(); renderToday(); toast(`"${name}" added ✨`);
+}
+
+// ── EMOJI PICKER ──
+let emojiForCat = null;
+function openEmojiPicker(catId) {
+  emojiForCat = catId;
+  const grid = document.getElementById('emojiGrid');
+  grid.innerHTML = EMOJIS.map(em => `<button class="em-btn" onclick="pickEmoji('${em}')">${em}</button>`).join('');
+  document.getElementById('emojiOverlay').classList.add('open');
+}
+function pickEmoji(em) {
+  const cat = S.cats.find(c=>c.id===emojiForCat);
+  if (cat) { cat.icon = em; debounceSave(); renderToday(); }
+  document.getElementById('emojiOverlay').classList.remove('open');
+}
+function closeEmoji(e) { if (e.target===document.getElementById('emojiOverlay')) document.getElementById('emojiOverlay').classList.remove('open'); }
+
+// ── REMINDERS ──
+let remCatId, remSubId;
+function openReminder(cid, sid) {
+  remCatId = cid; remSubId = sid;
+  const sub = S.cats.find(c=>c.id===cid)?.subs.find(s=>s.id===sid);
+  document.getElementById('remName').textContent = sub?.name || '';
+  document.getElementById('remTime').value = sub?.reminder || '08:00';
+  document.getElementById('reminderOverlay').classList.add('open');
+}
+function saveReminder() {
+  const t = document.getElementById('remTime').value;
+  const sub = S.cats.find(c=>c.id===remCatId)?.subs.find(s=>s.id===remSubId);
+  if (sub) { sub.reminder = t; debounceSave(); renderToday(); }
+  document.getElementById('reminderOverlay').classList.remove('open');
+  requestNotifPermission();
+  toast(`Reminder set for ${t} 🔔`);
+}
+function closeReminder(e) { if (!e || e.target===document.getElementById('reminderOverlay')) document.getElementById('reminderOverlay').classList.remove('open'); }
+
+function requestNotifPermission() {
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+}
+setInterval(() => {
+  if (Notification.permission !== 'granted' || !S) return;
+  const now = new Date();
+  const hhmm = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  S.cats.forEach(cat => cat.subs.forEach(sub => {
+    if (sub.reminder === hhmm && !sub.done) new Notification('GlowUp ✨', {body:`Time for: ${sub.name}`,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">✨</text></svg>'});
+  }));
+}, 60000);
+
+// ══════════════════════════════════════════════
+// WEEKLY PAGE
+// ══════════════════════════════════════════════
+function renderWeekly() {
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const todayIdx = new Date().getDay();
+  const ws = new Date(); ws.setDate(ws.getDate()-todayIdx);
+
+  const gridHtml = days.map((d,i) => {
+    const dt = new Date(ws); dt.setDate(ws.getDate()+i);
+    return `<div class="wd ${i===todayIdx?'today':''} ${i<todayIdx?'past':''}">
+      <div class="mono" style="font-size:8px;color:#50506a;text-transform:uppercase">${d}</div>
+      <div style="font-size:13px;font-weight:600;color:${i===todayIdx?'#64c8f5':i<todayIdx?'#c8f564':'#e8e8f0'}">${dt.getDate()}</div>
+      ${i<todayIdx?'<div class="mono" style="font-size:9px;color:#c8f564">✓</div>':''}
+    </div>`;
+  }).join('');
+
+  const sectionsHtml = S.weekly.map((sec, si) => {
+    const dc = sec.items.filter(i=>i.done).length, tc = sec.items.length;
+    const prog = tc ? ` · ${dc}/${tc}` : '';
+    let bodyHtml;
+    if (sec.isReflection) {
+      bodyHtml = `
+        <span class="ref-lbl">How did this week go?</span>
+        <textarea class="ref-ta" id="wkref-${si}-r1" placeholder="3 wins from this week…" onchange="saveWkRef(${si})">${esc(sec.r1||'')}</textarea>
+        <span class="ref-lbl">What would I do differently?</span>
+        <textarea class="ref-ta" id="wkref-${si}-r2" placeholder="Next week I will…" onchange="saveWkRef(${si})">${esc(sec.r2||'')}</textarea>
+        <span class="ref-lbl">My intention for next week</span>
+        <textarea class="ref-ta" id="wkref-${si}-r3" placeholder="This week I commit to…" onchange="saveWkRef(${si})">${esc(sec.r3||'')}</textarea>
+        <button class="btn-save" onclick="saveWkRefBtn(${si})" style="background:linear-gradient(135deg,#c8f564,#64c8f5);color:#0d0d0f;margin-top:10px">Save Review 🌟</button>`;
+    } else {
+      const itemsHtml = sec.items.map((it,ii) => `
+        <div class="plan-item ${it.done?'chk':''}">
+          <div class="pcb" onclick="toggleWkItem(${si},${ii})">✓</div>
+          <span class="pt">${esc(it.text)}</span>
+          <button style="background:none;border:none;color:#50506a;cursor:pointer;font-size:12px;padding:2px 4px" onclick="delWkItem(${si},${ii})">✕</button>
+        </div>`).join('');
+      bodyHtml = `
+        <div id="wk-items-${si}">${itemsHtml}</div>
+        <div class="add-plan-row">
+          <input class="add-plan-inp" id="wkai-${si}" placeholder="Add item…" onkeydown="if(event.key==='Enter')addWkItem(${si})">
+          <button style="background:#c8f564;color:#0d0d0f;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer" onclick="addWkItem(${si})">+ Add</button>
+        </div>`;
+    }
+    return `
+      <div class="ws-block ${sec.open?'open':''}">
+        <div class="ws-hd" onclick="toggleWkSec(${si})">
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:17px">${sec.icon}</span>${esc(sec.title)}${prog}</div>
+          <span class="mono" style="font-size:11px;color:#50506a;transition:transform .25s;transform:${sec.open?'rotate(180deg)':'none'}">▼</span>
+        </div>
+        <div class="ws-body">${bodyHtml}</div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('page-weekly').innerHTML = `
+    <div class="ph">
+      <div class="mono" style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#64c8f5;display:block;margin-bottom:6px">📅 Weekly Review</div>
+      <div class="serif" style="font-size:26px;font-weight:700;line-height:1.2;display:block">Plan. Prepare.<br><em style="color:#c8f564">Show up all week.</em></div>
+    </div>
+    <div class="week-grid">${gridHtml}</div>
+    <div style="padding:0 14px">${sectionsHtml}</div>`;
+}
+
+function toggleWkSec(si) { S.weekly[si].open=!S.weekly[si].open; debounceSave(); renderWeekly(); }
+function toggleWkItem(si,ii) { S.weekly[si].items[ii].done=!S.weekly[si].items[ii].done; debounceSave(); renderWeekly(); }
+function delWkItem(si,ii) { S.weekly[si].items.splice(ii,1); debounceSave(); renderWeekly(); }
+function addWkItem(si) {
+  const inp = document.getElementById('wkai-'+si);
+  const txt = inp?.value.trim();
+  if (!txt) return;
+  S.weekly[si].items.push({id:'i'+Date.now(),text:txt,done:false});
+  inp.value=''; debounceSave(); renderWeekly(); toast('Added ✓');
+}
+function saveWkRef(si) {
+  S.weekly[si].r1 = document.getElementById(`wkref-${si}-r1`)?.value||'';
+  S.weekly[si].r2 = document.getElementById(`wkref-${si}-r2`)?.value||'';
+  S.weekly[si].r3 = document.getElementById(`wkref-${si}-r3`)?.value||'';
+  debounceSave();
+}
+function saveWkRefBtn(si) { saveWkRef(si); toast('Review saved 🌟'); }
+
+// ══════════════════════════════════════════════
+// JOURNAL / MIND PAGE
+// ══════════════════════════════════════════════
+let activePrompt = 'What am I proud of today?';
+let journalTab = 'journal';
+
+function renderJournal() {
+  const tabs = ['journal','identity','goals','struggles'];
+  const tabsHtml = tabs.map(t => `<button class="hub-tab${journalTab===t?' active':''}" onclick="switchJournalTab('${t}')">${t.charAt(0).toUpperCase()+t.slice(1)}</button>`).join('');
+
+  let panelHtml = '';
+  if (journalTab === 'journal') panelHtml = renderJournalPanel();
+  else if (journalTab === 'identity') panelHtml = renderIdentityPanel();
+  else if (journalTab === 'goals') panelHtml = renderGoalsPanel();
+  else if (journalTab === 'struggles') panelHtml = renderStrugglesPanel();
+
+  document.getElementById('page-journal').innerHTML = `
+    <div class="ph">
+      <div class="mono" style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#f564a9;display:block;margin-bottom:6px">📓 Mind & Identity</div>
+      <div class="serif" style="font-size:26px;font-weight:700;line-height:1.2;display:block">Your inner world,<br><em style="color:#c8f564">organized.</em></div>
+    </div>
+    <div class="hub-tabs">${tabsHtml}</div>
+    <div class="hub-panel active">${panelHtml}</div>`;
+}
+
+function switchJournalTab(t) { journalTab = t; renderJournal(); }
+
+const PROMPTS = ['What am I proud of today?','What challenged me?','Who am I becoming?','What do I want to release?','Tomorrow I intend to…','I am grateful for…','How did I show up for myself?'];
+const PROMPT_LABELS = ['Proud of','Challenge','Identity','Release','Tomorrow','Grateful','Self-care'];
+
+function renderJournalPanel() {
+  const chipsHtml = PROMPTS.map((p,i) => `<button class="p-chip${activePrompt===p?' active':''}" onclick="setPrompt('${p.replace(/'/g,"\\'")}',this)">${PROMPT_LABELS[i]}</button>`).join('');
+  const entriesHtml = S.entries.slice(0,12).map(e => `
+    <div class="entry-card">
+      <div class="mono" style="font-size:9px;color:#50506a;margin-bottom:4px">${e.date}</div>
+      <div class="mono" style="font-size:10px;color:#f564a9;margin-bottom:5px">${esc(e.prompt)}</div>
+      <div class="serif" style="font-size:14px;font-style:italic;color:#8888a8;line-height:1.6">${esc(e.text.slice(0,200))}${e.text.length>200?'…':''}</div>
+    </div>`).join('');
+  return `
+    <div class="prompt-chips">${chipsHtml}</div>
+    <div class="mono" id="jPromptLbl" style="font-size:10px;color:#f564a9;display:block;margin-bottom:8px">${esc(activePrompt)}</div>
+    <textarea class="j-ta" id="jText" placeholder="Write freely… your thoughts are safe here."></textarea>
+    <button class="btn-save" onclick="saveJEntry()" style="background:linear-gradient(135deg,#f564a9,#a064f5);color:#fff">Save Entry ✨</button>
+    ${S.entries.length ? `<div class="mono" style="font-size:10px;letter-spacing:2px;color:#50506a;text-transform:uppercase;display:block;margin-bottom:10px">Past Entries</div>${entriesHtml}` : ''}`;
+}
+
+function setPrompt(p, el) {
+  activePrompt = p;
+  document.querySelectorAll('.p-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  const lbl = document.getElementById('jPromptLbl');
+  if (lbl) lbl.textContent = p;
+}
+function saveJEntry() {
+  const txt = document.getElementById('jText')?.value.trim();
+  if (!txt) { toast('Write something 📝'); return; }
+  S.entries.unshift({date:new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}),prompt:activePrompt,text:txt,ts:Date.now()});
+  if (S.entries.length > 100) S.entries.pop();
+  debounceSave(); renderJournal(); toast('Entry saved ✨');
+}
+
+function renderIdentityPanel() {
+  const id = S.identity;
+  return `
+    <div class="id-card">
+      <div class="mono" style="font-size:9px;letter-spacing:2px;color:#c8f564;text-transform:uppercase;display:block;margin-bottom:8px">⚡ My Identity Statement</div>
+      <textarea class="id-ta" id="idStmt" rows="3" placeholder="I am someone who shows up for herself every single day…">${esc(id.statement||'')}</textarea>
+    </div>
+    <div class="pillars-grid">
+      <div class="pillar-card"><div class="mono" style="font-size:9px;letter-spacing:1px;color:#c8f564;text-transform:uppercase;display:block;margin-bottom:7px">💪 My Values</div><textarea class="pillar-ta" id="idValues" rows="4" placeholder="Discipline, growth…">${esc(id.values||'')}</textarea></div>
+      <div class="pillar-card"><div class="mono" style="font-size:9px;letter-spacing:1px;color:#64c8f5;text-transform:uppercase;display:block;margin-bottom:7px">🌱 Growing into…</div><textarea class="pillar-ta" id="idGrowing" rows="4" placeholder="Confident, focused…">${esc(id.growing||'')}</textarea></div>
+      <div class="pillar-card"><div class="mono" style="font-size:9px;letter-spacing:1px;color:#f564a9;text-transform:uppercase;display:block;margin-bottom:7px">💖 I love about me…</div><textarea class="pillar-ta" id="idLove" rows="4" placeholder="My resilience…">${esc(id.love||'')}</textarea></div>
+      <div class="pillar-card"><div class="mono" style="font-size:9px;letter-spacing:1px;color:#f5c842;text-transform:uppercase;display:block;margin-bottom:7px">🔑 Releasing…</div><textarea class="pillar-ta" id="idRelease" rows="4" placeholder="Self-doubt…">${esc(id.release||'')}</textarea></div>
+    </div>
+    <button class="btn-save" onclick="saveIdentity()" style="background:linear-gradient(135deg,#c8f564,#64c8f5);color:#0d0d0f">Save Identity ⚡</button>`;
+}
+function saveIdentity() {
+  S.identity = {
+    statement: document.getElementById('idStmt')?.value||'',
+    values: document.getElementById('idValues')?.value||'',
+    growing: document.getElementById('idGrowing')?.value||'',
+    love: document.getElementById('idLove')?.value||'',
+    release: document.getElementById('idRelease')?.value||''
+  };
+  debounceSave(); toast('Identity saved ⚡');
+}
+
+function renderGoalsPanel() {
+  const goalsHtml = S.goals.map((g,i) => `
+    <div class="goal-card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span class="g-badge ${g.type==='short'?'gs':'gl'}">${g.type==='short'?'This Month':'Long-term'}</span>
+        <input class="g-title-inp" value="${esc(g.title)}" placeholder="Goal title…" onchange="updateGoal(${i},'title',this.value)">
+        <button onclick="delGoal(${i})" style="background:none;border:none;color:#50506a;cursor:pointer;font-size:12px">✕</button>
+      </div>
+      <input class="g-why-inp" value="${esc(g.why)}" placeholder="Why this matters…" onchange="updateGoal(${i},'why',this.value)">
+      <div class="g-pb"><div class="g-pf" id="gpf-${i}" style="width:${g.pct}%"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:7px">
+        <span class="mono" style="font-size:10px;color:#50506a" id="gpct-${i}">${g.pct}% complete</span>
+        <input type="range" min="0" max="100" value="${g.pct}" style="width:80px;accent-color:#c8f564" oninput="updateGoalPct(${i},this.value)">
+      </div>
+    </div>`).join('');
+  return `
+    <button onclick="addGoal('short')" style="display:flex;align-items:center;gap:8px;padding:11px 14px;background:#14141a;border:1px dashed #32324a;border-radius:12px;cursor:pointer;color:#50506a;font-size:12px;font-family:'DM Mono',monospace;width:100%;margin-bottom:10px">+ Short-term goal (this month)</button>
+    <button onclick="addGoal('long')" style="display:flex;align-items:center;gap:8px;padding:11px 14px;background:#14141a;border:1px dashed rgba(160,100,245,.3);border-radius:12px;cursor:pointer;color:#a064f5;font-size:12px;font-family:'DM Mono',monospace;width:100%;margin-bottom:14px">+ Long-term goal (this year)</button>
+    ${S.goals.length===0?'<div class="mono" style="font-size:11px;color:#50506a;text-align:center;padding:20px">Add your first goal above ↑</div>':''}
+    ${goalsHtml}`;
+}
+function addGoal(type) { S.goals.push({id:Date.now(),type,title:'',why:'',pct:0}); debounceSave(); renderJournal(); }
+function updateGoal(i,k,v) { S.goals[i][k]=v; debounceSave(); }
+function updateGoalPct(i,v) {
+  S.goals[i].pct = +v;
+  const pf = document.getElementById('gpf-'+i);
+  const pc = document.getElementById('gpct-'+i);
+  if (pf) pf.style.width = v+'%';
+  if (pc) pc.textContent = v+'% complete';
+  debounceSave();
+}
+function delGoal(i) { S.goals.splice(i,1); debounceSave(); renderJournal(); }
+
+function renderStrugglesPanel() {
+  const strHtml = S.struggles.slice(0,8).map(s => `
+    <div class="str-card">
+      <div class="mono" style="font-size:9px;color:#50506a;margin-bottom:4px">${s.date}</div>
+      <div style="font-size:13px;color:#8888a8;line-height:1.6">${esc(s.text)}</div>
+      ${s.reframe?`<div class="serif" style="font-size:12px;color:#f5c842;margin-top:5px;font-style:italic">Reframe: ${esc(s.reframe)}</div>`:''}
+    </div>`).join('');
+  return `
+    <div class="mono" style="font-size:10px;color:#f5c842;display:block;margin-bottom:8px">What am I struggling with?</div>
+    <textarea class="str-inp" id="strText" placeholder="Be honest — this is just for you."></textarea>
+    <div class="mono" style="font-size:10px;color:#f5c842;display:block;margin-bottom:8px">Reframe it…</div>
+    <textarea class="str-rf-inp" id="strRf" placeholder="Even though it's hard, I know that…"></textarea>
+    <button class="btn-save" onclick="saveStruggle()" style="background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.3);color:#f5c842">Log it 🌱</button>
+    ${S.struggles.length?`<div class="mono" style="font-size:10px;letter-spacing:2px;color:#50506a;text-transform:uppercase;display:block;margin-bottom:10px">Past Struggles & Reframes</div>${strHtml}`:''}`;
+}
+function saveStruggle() {
+  const txt = document.getElementById('strText')?.value.trim();
+  if (!txt) { toast('Describe it 🌱'); return; }
+  const rf = document.getElementById('strRf')?.value.trim();
+  S.struggles.unshift({date:new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}),text:txt,reframe:rf,ts:Date.now()});
+  if (S.struggles.length > 50) S.struggles.pop();
+  debounceSave(); renderJournal(); toast('Logged 🌱');
+}
+
+// ══════════════════════════════════════════════
+// PROGRESS PAGE
+// ══════════════════════════════════════════════
+let progressPeriod = 30;
+function renderProgress() {
+  const allSubs = S.cats.flatMap(c=>c.subs);
+  const totalDone = allSubs.reduce((a,s)=>a+(s.totalDone||0),0);
+  const maxStreak = Math.max(...allSubs.map(s=>s.streak||0),0);
+  const perfectDays = S.perfectDays||0;
+  const history = S.dayHistory||{};
+  const histVals = Object.values(history);
+  const avgPct = histVals.length ? Math.round(histVals.reduce((a,b)=>a+b,0)/histVals.length) : 0;
+
+  const periodTabsHtml = [30,60,90,365].map(d => `<button class="ppt${progressPeriod===d?' active':''}" onclick="setProgressPeriod(${d})">${d===365?'All Time':d+' Days'}</button>`).join('');
+
+  const overviewHtml = [
+    {n:totalDone,l:'Total Completions',s:'all time',c:'#c8f564'},
+    {n:maxStreak,l:'Best Streak',s:'current',c:'#f5c842'},
+    {n:perfectDays,l:'Perfect Days',s:'100% complete',c:'#f564a9'},
+    {n:avgPct+'%',l:'Avg Completion',s:`${histVals.length} days tracked`,c:'#64c8f5'},
+  ].map(item => `
+    <div class="po-card">
+      <div class="serif" style="font-size:28px;font-weight:700;color:${item.c};line-height:1;display:block">${item.n}</div>
+      <div class="mono" style="font-size:9px;color:#50506a;text-transform:uppercase;letter-spacing:1px;display:block;margin-top:4px">${item.l}</div>
+      <div class="mono" style="font-size:10px;color:#8888a8;display:block;margin-top:2px">${item.s}</div>
+    </div>`).join('');
+
+  // Heatmap — last 84 days
+  const today = new Date();
+  const heatHtml = Array.from({length:84},(_,i)=>{
+    const d = new Date(today); d.setDate(today.getDate()-(83-i));
+    const key = d.toDateString();
+    const pct = history[key]||(key===today.toDateString()?calcPct():0);
+    const lvl = pct>=100?'l4':pct>=75?'l3':pct>=50?'l2':pct>0?'l1':'';
+    return `<div class="hm-cell${lvl?' '+lvl:''}" style="width:calc((100% - 3px*20)/21);aspect-ratio:1" title="${pct}%"></div>`;
+  }).join('');
+
+  const COLORS = ['#c8f564','#64c8f5','#f564a9','#f5c842','#a064f5','#64f5b8'];
+  const catProgressHtml = S.cats.map((cat,i) => {
+    const catTotal = cat.subs.reduce((a,s)=>a+(s.totalDone||0),0);
+    const bestStr = Math.max(...cat.subs.map(s=>s.bestStreak||0),0);
+    const curStr = Math.max(...cat.subs.map(s=>s.streak||0),0);
+    const c = COLORS[i%COLORS.length];
+    return `
+      <div class="cp-card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <div style="font-size:22px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#1a1a24;border-radius:10px;flex-shrink:0">${cat.icon}</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:600">${esc(cat.name)}</div>
+            <div class="mono" style="font-size:10px;color:#50506a">${cat.subs.length} habits · ${cat.subs.filter(s=>s.done).length} done today</div>
+          </div>
+          <div class="serif" style="font-size:22px;font-weight:700;color:${c}">${catTotal}</div>
+        </div>
+        <div style="height:6px;background:#20202d;border-radius:10px;overflow:hidden;margin-bottom:10px">
+          <div style="height:100%;width:${Math.min(catTotal>0?80:0,100)}%;background:${c};border-radius:10px;transition:width .6s"></div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          ${[{n:catTotal,l:'All-time ✓',c},{n:curStr+'d',l:'Streak',c:'#f5c842'},{n:bestStr+'d',l:'Best Streak',c:'#64c8f5'}].map(st=>`
+            <div style="background:#1a1a24;border:1px solid #262636;border-radius:8px;padding:6px 10px">
+              <div class="serif" style="font-size:16px;font-weight:700;color:${st.c};display:block">${st.n}</div>
+              <div class="mono" style="font-size:8px;color:#50506a;text-transform:uppercase;letter-spacing:.5px">${st.l}</div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('page-progress').innerHTML = `
+    <div class="ph">
+      <div class="mono" style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#64f5b8;display:block;margin-bottom:6px">📈 Long-Term Progress</div>
+      <div class="serif" style="font-size:26px;font-weight:700;line-height:1.2;display:block">Every day adds up.<br><em style="color:#c8f564">Watch yourself grow.</em></div>
+    </div>
+    <div class="period-tabs">${periodTabsHtml}</div>
+    <div class="prog-overview">${overviewHtml}</div>
+    <div style="padding:0 14px;margin-bottom:20px">
+      <div class="mono" style="font-size:10px;letter-spacing:2px;color:#50506a;text-transform:uppercase;display:block;margin-bottom:12px">Activity Heatmap (Last 3 Months)</div>
+      <div style="background:#14141a;border:1px solid #262636;border-radius:14px;padding:14px">
+        <div class="heatmap">${heatHtml}</div>
+        <div style="display:flex;align-items:center;gap:4px;margin-top:10px;justify-content:flex-end">
+          <span class="mono" style="font-size:9px;color:#50506a">Less</span>
+          <div style="width:12px;height:12px;border-radius:2px;background:#20202d"></div>
+          <div style="width:12px;height:12px;border-radius:2px;background:rgba(200,245,100,.2)"></div>
+          <div style="width:12px;height:12px;border-radius:2px;background:rgba(200,245,100,.45)"></div>
+          <div style="width:12px;height:12px;border-radius:2px;background:rgba(200,245,100,.7)"></div>
+          <div style="width:12px;height:12px;border-radius:2px;background:#c8f564"></div>
+          <span class="mono" style="font-size:9px;color:#50506a">More</span>
+        </div>
+      </div>
+    </div>
+    <div style="padding:0 14px">
+      <div class="mono" style="font-size:10px;letter-spacing:2px;color:#50506a;text-transform:uppercase;display:block;margin-bottom:12px">By Category</div>
+      ${catProgressHtml}
+    </div>`;
+}
+function setProgressPeriod(d) { progressPeriod=d; renderProgress(); }
+
+// ══════════════════════════════════════════════
+// FRIENDS PAGE  (reads leaderboard from Supabase)
+// ══════════════════════════════════════════════
+let lbMode = 'streak';
+
+async function renderFriends() {
+  const uid = currentUser.id;
+  const profile = LS.get('glowup_profile_' + uid) || {};
+  const myCode = profile.friend_code || genCode(currentUser.email || uid);
+  const myName = profile.display_name || currentUser.email?.split('@')[0] || 'You';
+  const allSubs = S.cats.flatMap(c=>c.subs);
+  const myStreak = Math.max(...allSubs.map(s=>s.streak||0),0);
+  const myPct = calcPct();
+  const myPerfect = S.perfectDays||0;
+
+  // Render shell immediately with my data
+  const medals = ['🥇','🥈','🥉'];
+  const lbColors = ['#c8f564','#64c8f5','#f564a9','#f5c842','#a064f5','#64f5b8'];
+
+  const lbTabsHtml = [['streak','🔥 Streak'],['perfect','💎 Perfect Days'],['today','✦ Today']].map(([m,l]) =>
+    `<button class="mono" onclick="setLbMode('${m}')" style="padding:6px 12px;background:${lbMode===m?'rgba(245,200,66,.06)':'#14141a'};border:1px solid ${lbMode===m?'#f5c842':'#262636'};border-radius:16px;font-size:10px;color:${lbMode===m?'#f5c842':'#50506a'};cursor:pointer">${l}</button>`
+  ).join('');
+
+  document.getElementById('page-friends').innerHTML = `
+    <div class="ph">
+      <div class="mono" style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#f5c842;display:block;margin-bottom:6px">🏆 Accountability</div>
+      <div class="serif" style="font-size:26px;font-weight:700;line-height:1.2;display:block">Compete. Encourage.<br><em style="color:#c8f564">Win together.</em></div>
+    </div>
+    <div class="share-card">
+      <div style="font-size:14px;font-weight:700;margin-bottom:6px">Your Friend Code 🔗</div>
+      <div class="mono" style="font-size:10px;color:#8888a8;line-height:1.6;display:block;margin-bottom:12px">Share your code — your friend enters it to join your leaderboard. Works across any device, anywhere.</div>
+      <div class="code-box">
+        <span class="mono" style="flex:1;font-size:18px;color:#f5c842;letter-spacing:4px;font-weight:500">${myCode}</span>
+        <button onclick="copyCode('${myCode}')" style="background:#f5c842;color:#0d0d0f;border:none;border-radius:8px;padding:6px 12px;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;cursor:pointer">Copy</button>
+      </div>
+      <button onclick="nativeShare('${myCode}','${esc(myName)}')" style="display:block;width:100%;padding:11px;background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.25);color:#f5c842;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">📤 Share via Messages / WhatsApp</button>
+    </div>
+    <div style="padding:0 14px;margin-bottom:20px">
+      <div class="mono" style="font-size:10px;letter-spacing:2px;color:#50506a;text-transform:uppercase;display:block;margin-bottom:12px">Leaderboard</div>
+      <div style="display:flex;gap:6px;margin-bottom:14px">${lbTabsHtml}</div>
+      <div class="lb-card" id="lbCard"><div class="mono" style="font-size:11px;color:#50506a;padding:20px;text-align:center">Loading…</div></div>
+    </div>
+    <div style="padding:0 14px">
+      <div class="mono" style="font-size:10px;letter-spacing:2px;color:#50506a;text-transform:uppercase;display:block;margin-bottom:10px">Add Friend by Code</div>
+      <div style="display:flex;gap:10px">
+        <input id="friendCodeInp" class="add-inp" placeholder="Enter friend's code (e.g. GLWMAYA)" style="font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase" onkeydown="if(event.key==='Enter')addFriend()">
+        <button class="btn-lime" onclick="addFriend()" style="padding:0 16px;font-size:14px;flex-shrink:0">Add</button>
+      </div>
+    </div>`;
+
+  // Now fetch leaderboard from Supabase async
+  const friendCodes = S.friends || [];
+  const allCodes = [myCode, ...friendCodes];
+
+  const { data: lbRows } = await sb
+    .from('leaderboard')
+    .select('*')
+    .in('friend_code', allCodes);
+
+  const entries = lbRows ? lbRows.map(row => ({
+    name: row.display_name,
+    code: row.friend_code,
+    streak: row.streak || 0,
+    pct: row.today_pct || 0,
+    perfect: row.perfect_days || 0,
+    you: row.friend_code === myCode
+  })) : [{name:myName,code:myCode,streak:myStreak,pct:myPct,perfect:myPerfect,you:true}];
+
+  // Make sure "me" is always in the list
+  if (!entries.find(e=>e.you)) {
+    entries.push({name:myName,code:myCode,streak:myStreak,pct:myPct,perfect:myPerfect,you:true});
+  }
+
+  if (lbMode==='streak') entries.sort((a,b)=>b.streak-a.streak);
+  else if (lbMode==='perfect') entries.sort((a,b)=>b.perfect-a.perfect);
+  else entries.sort((a,b)=>b.pct-a.pct);
+
+  const lbEl = document.getElementById('lbCard');
+  if (!lbEl) return;
+
+  if (entries.length === 1 && entries[0].you) {
+    lbEl.innerHTML = `
+      <div style="padding:20px;text-align:center">
+        <div style="font-size:22px;margin-bottom:8px">🏆</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px">You're first on the board!</div>
+        <div class="mono" style="font-size:10px;color:#50506a">Add a friend using their code below to compete.</div>
+      </div>`;
+    return;
+  }
+
+  lbEl.innerHTML = entries.map((p,i) => {
+    const score = lbMode==='streak'?`🔥${p.streak}d`:lbMode==='perfect'?`💎${p.perfect}`:`${Math.round(p.pct)}%`;
+    const top = entries[0];
+    const barPct = top ? (lbMode==='streak'?p.streak/Math.max(top.streak,1):lbMode==='perfect'?p.perfect/Math.max(top.perfect,1):p.pct/100)*100 : 0;
+    return `
+      <div class="lb-row${p.you?' you':''}">
+        <div class="mono" style="font-size:14px;width:22px;text-align:center;flex-shrink:0">${medals[i]||i+1}</div>
+        <span style="font-size:20px;flex-shrink:0">${p.you?'🌟':'🌸'}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600">${esc(p.name)}${p.you?' (you)':''}</div>
+          <div class="mono" style="font-size:9px;color:#50506a;display:block;margin-top:2px">${lbMode==='streak'?p.streak+' day streak':lbMode==='perfect'?p.perfect+' perfect days':Math.round(p.pct)+'% today'}</div>
+          <div style="height:3px;background:#20202d;border-radius:10px;margin-top:4px;overflow:hidden">
+            <div style="height:100%;width:${barPct}%;background:${lbColors[i%lbColors.length]};border-radius:10px;transition:width .5s"></div>
+          </div>
+        </div>
+        <div class="mono" style="font-size:11px;color:#f5c842;flex-shrink:0">${score}</div>
+      </div>`;
+  }).join('');
+}
+
+function setLbMode(mode) { lbMode=mode; renderFriends(); }
+
+async function addFriend() {
+  const inp = document.getElementById('friendCodeInp');
+  const code = inp?.value.trim().toUpperCase();
+  if (!code) return;
+  const uid = currentUser.id;
+  const profile = LS.get('glowup_profile_' + uid)||{};
+  const myCode = profile.friend_code || genCode(currentUser.email || uid);
+  if (code === myCode) { toast("That's your own code! 😄"); return; }
+  if ((S.friends||[]).includes(code)) { toast('Already added!'); return; }
+
+  // Check this code exists in Supabase
+  const { data } = await sb.from('leaderboard').select('friend_code,display_name').eq('friend_code', code).single();
+  if (!data) { toast('Code not found — your friend needs to sign up first'); return; }
+
+  if (!S.friends) S.friends = [];
+  S.friends.push(code);
+  inp.value='';
+  debounceSave();
+  renderFriends();
+  toast(`${data.display_name} added! 🎉`);
+}
+
+function copyCode(code) {
+  navigator.clipboard?.writeText(code).then(()=>toast('Code copied! 🔗')).catch(()=>toast('Your code: '+code));
+}
+function nativeShare(code, name) {
+  const msg = `Hey! I'm using GlowUp to track my habits 🌱\nAdd me with my code: ${code}\nSign up at [your-url] and let's keep each other accountable! 🔥`;
+  if (navigator.share) navigator.share({title:'Join me on GlowUp!',text:msg});
+  else { navigator.clipboard?.writeText(msg); toast('Message copied — share it! 📋'); }
+}
+
+// ══════════════════════════════════════════════
+// ME PAGE
+// ══════════════════════════════════════════════
+function renderMe() {
+  const uid = currentUser?.id || '';
+  const profile = LS.get('glowup_profile_' + uid)||{};
+  const stmt = S.identity.statement||'';
+  const allSubs = S.cats.flatMap(c=>c.subs);
+  const done = allSubs.filter(s=>s.done).length;
+  const maxStreak = Math.max(...allSubs.map(s=>s.streak||0),0);
+  const doneNames = allSubs.filter(s=>s.done).map(s=>s.name);
+  const displayName = profile.display_name || currentUser?.email?.split('@')[0] || 'You';
+  const emailHandle = currentUser?.email || '';
+
+  const goalsHtml = S.goals.length ? S.goals.map(g=>`
+    <div style="background:#14141a;border:1px solid #262636;border-radius:12px;padding:11px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+      <div style="width:8px;height:8px;border-radius:50%;background:${g.type==='short'?'#64c8f5':'#a064f5'};flex-shrink:0"></div>
+      <span style="font-size:13px;font-weight:600;flex:1">${esc(g.title||'Untitled goal')}</span>
+      <span class="mono" style="font-size:11px;color:#50506a">${g.pct}%</span>
+    </div>`).join('') : `<div class="mono" style="font-size:11px;color:#50506a">No goals yet — add them in Mind tab 🎯</div>`;
+
+  document.getElementById('page-me').innerHTML = `
+    <div style="padding:48px 18px 20px;text-align:center">
+      <div style="width:76px;height:76px;border-radius:50%;margin:0 auto 10px;background:linear-gradient(135deg,#c8f564,#64c8f5);display:flex;align-items:center;justify-content:center;font-size:34px;border:3px solid #1a1a24">🌟</div>
+      <div class="serif" style="font-size:22px;font-weight:700;display:block;margin-bottom:3px">${esc(displayName)}</div>
+      <div class="mono" style="font-size:10px;color:#50506a;display:block;margin-bottom:4px;letter-spacing:1px">${esc(emailHandle)}</div>
+      <div class="serif" style="font-size:13px;font-style:italic;color:#8888a8;display:block;max-width:280px;margin:0 auto">${stmt?`"${esc(stmt.slice(0,80))}${stmt.length>80?'…':''}"` : 'Fill in your identity statement ✨'}</div>
+    </div>
+    <div class="stats-grid">
+      ${[{n:done,l:'Done Today',c:'#c8f564'},{n:maxStreak,l:'Day Streak',c:'#f5c842'},{n:S.entries.length,l:'Journal Entries',c:'#f564a9'}].map(st=>`
+        <div class="stat-card">
+          <div class="serif" style="font-size:22px;font-weight:700;color:${st.c};display:block">${st.n}</div>
+          <div class="mono" style="font-size:9px;color:#50506a;text-transform:uppercase;letter-spacing:1px;display:block;margin-top:2px">${st.l}</div>
+        </div>`).join('')}
+    </div>
+    <div style="padding:0 14px;margin-bottom:18px">
+      <div class="mono" style="font-size:10px;letter-spacing:2px;color:#50506a;text-transform:uppercase;display:block;margin-bottom:10px">My Identity</div>
+      <div class="id-snap">
+        <div class="serif" style="font-size:15px;font-style:italic;line-height:1.6;color:#e8e8f0">${stmt||'Add your identity statement in the Mind tab ✨'}</div>
+      </div>
+    </div>
+    <div style="padding:0 14px;margin-bottom:18px">
+      <div class="mono" style="font-size:10px;letter-spacing:2px;color:#50506a;text-transform:uppercase;display:block;margin-bottom:10px">Active Goals</div>
+      ${goalsHtml}
+    </div>
+    <div style="padding:0 14px;margin-bottom:20px">
+      <div class="mono" style="font-size:10px;letter-spacing:2px;color:#50506a;text-transform:uppercase;display:block;margin-bottom:10px">Today's Wins</div>
+      <div style="background:#14141a;border:1px solid #262636;border-radius:12px;padding:14px">
+        <div class="serif" style="font-size:14px;font-style:italic;color:${doneNames.length?'#c8f564':'#8888a8'};line-height:1.7">${doneNames.length?'Today I showed up: '+doneNames.join(' · '):'Complete habits to see your wins here ✨'}</div>
+      </div>
+    </div>
+    <button class="btn-ghost" onclick="logout()" style="margin:0 14px 20px;width:calc(100% - 28px)">Sign Out</button>
+    <div style="padding:0 14px;margin-bottom:20px">
+      <div class="mono" style="font-size:10px;letter-spacing:2px;color:#50506a;text-transform:uppercase;display:block;margin-bottom:10px">Settings & Notifications</div>
+      <div style="background:#14141a;border:1px solid #262636;border-radius:14px;overflow:hidden">
+        <div class="s-row"><span style="font-size:18px;width:30px;text-align:center;flex-shrink:0">🌅</span><div style="flex:1"><div style="font-size:14px;font-weight:600">Morning check-in</div><div class="mono" style="font-size:10px;color:#50506a">Start your habits</div></div><input type="time" class="tin" value="08:00"></div>
+        <div class="s-row"><span style="font-size:18px;width:30px;text-align:center;flex-shrink:0">🌙</span><div style="flex:1"><div style="font-size:14px;font-weight:600">Evening wind-down</div><div class="mono" style="font-size:10px;color:#50506a">Journal & review</div></div><input type="time" class="tin" value="21:00"></div>
+        <div class="s-row"><span style="font-size:18px;width:30px;text-align:center;flex-shrink:0">🔔</span><div style="flex:1"><div style="font-size:14px;font-weight:600">Browser notifications</div><div class="mono" style="font-size:10px;color:#50506a" id="notifStatus">Tap to enable</div></div><label class="tog-wrap"><input type="checkbox" id="notifToggle" onchange="toggleNotif(this)"><div class="tog-track"></div><div class="tog-thumb"></div></label></div>
+        <div class="s-row"><span style="font-size:18px;width:30px;text-align:center;flex-shrink:0">🔄</span><div style="flex:1"><div style="font-size:14px;font-weight:600">Reset today</div><div class="mono" style="font-size:10px;color:#50506a">Clear today's checkmarks</div></div><button onclick="resetToday()" style="background:none;border:1px solid #32324a;border-radius:8px;padding:5px 12px;color:#8888a8;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer">Reset</button></div>
+      </div>
+    </div>
+    <div style="margin:0 14px 20px;background:rgba(200,245,100,.04);border:1px solid rgba(200,245,100,.15);border-radius:12px;padding:14px;display:flex;gap:12px">
+      <span style="font-size:21px;flex-shrink:0;margin-top:1px">📱</span>
+      <div class="mono" style="font-size:11px;color:#8888a8;line-height:1.7">
+        <strong style="color:#c8f564;display:block;margin-bottom:4px;font-size:12px">Add to Home Screen</strong>
+        iPhone (Safari): tap Share (□↑) → "Add to Home Screen"<br>
+        Android (Chrome): tap ⋮ → "Add to Home Screen"
+      </div>
+    </div>`;
+
+  if (Notification.permission==='granted') {
+    const st = document.getElementById('notifStatus');
+    const cb = document.getElementById('notifToggle');
+    if (st) st.textContent = 'Enabled ✓';
+    if (cb) cb.checked = true;
+  }
+}
+
+function toggleNotif(el) {
+  if (el.checked && 'Notification' in window) {
+    Notification.requestPermission().then(p => {
+      const st = document.getElementById('notifStatus');
+      if (p==='granted') { if(st) st.textContent='Enabled ✓'; toast('Notifications enabled 🔔'); }
+      else { el.checked=false; }
+    });
+  }
+}
+function resetToday() {
+  S.cats = S.cats.map(c=>({...c,subs:c.subs.map(s=>({...s,done:false}))}));
+  debounceSave(); renderMe(); toast('Fresh start 🌱');
+}
+
+// ══════════════════════════════════════════════
+// UTILITY
+// ══════════════════════════════════════════════
+function esc(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ══════════════════════════════════════════════
+// STARTUP — check for existing Supabase session
+// ══════════════════════════════════════════════
+(async function startup() {
+  // Check if already logged in (Supabase persists sessions automatically)
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    currentUser = session.user;
+    await finishLogin();
+  }
+  // Enter key on login fields
+  document.getElementById('authUser').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('authPass').focus(); });
+  document.getElementById('authPass').addEventListener('keydown', e => { if(e.key==='Enter') handleAuth(); });
+})();
+</script>
+</body>
+</html>
