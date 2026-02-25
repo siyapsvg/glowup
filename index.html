@@ -956,7 +956,7 @@ function checkNotifications() {
     todayEvents.forEach(ev => lines.push(`${ev.start} ${ev.title}`));
     const wkToday = S.weekly.filter(s=>!s.isReflection).flatMap(s=>s.items.filter(it=>it.day===todayDay&&!it.done));
     if (wkToday.length) lines.push(`${wkToday.length} weekly tasks`);
-    if (lines.length) glowNotif('Good morning! Here's your day ✨', lines.join(' · '));
+    if (lines.length) glowNotif("Good morning! Here's your day ✨", lines.join(' · '));
   }
 
   // ── Habit reminders ──
