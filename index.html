@@ -484,7 +484,12 @@ async function handleAuth() {
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
     if (error) { errEl.textContent = 'Wrong email or password.'; btn.textContent='Sign In →'; btn.disabled=false; return; }
     currentUser = data.user;
-    await finishLogin();
+    try {
+      await finishLogin();
+    } catch(e) {
+      console.error('finishLogin error:', e);
+      errEl.textContent = 'Login error: ' + e.message;
+    }
   }
 
   btn.textContent = authModeVal==='login' ? 'Sign In →' : 'Create Account →';
